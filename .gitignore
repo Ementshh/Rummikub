@@ -3,3 +3,5 @@
 node_modules/
 .env
 *.http
+/Game/.gradle
+/Game/.gradle

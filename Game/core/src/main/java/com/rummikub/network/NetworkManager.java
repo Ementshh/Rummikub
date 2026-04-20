@@ -1,0 +1,133 @@
+package com.rummikub.network;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Json;
+import com.rummikub.utils.Constants;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * [SINGLETON] — Single HTTP client instance for the entire application lifecycle.
+ *
+ * All network calls run on a background thread to avoid blocking the LibGDX
+ * render thread. Results are posted back to the main thread via
+ * Gdx.app.postRunnable() before invoking the callback.
+ */
+public class NetworkManager {
+
+    private static NetworkManager instance;
+
+    private String jwtToken;
+    private String currentUserId;
+    private final Json json;
+
+    private NetworkManager() {
+        json = new Json();
+        json.setIgnoreUnknownFields(true);
+    }
+
+    public static NetworkManager getInstance() {
+        if (instance == null) {
+            instance = new NetworkManager();
+        }
+        return instance;
+    }
+
+    // -------------------------------------------------------------------------
+    // Auth state
+    // -------------------------------------------------------------------------
+
+    public void setToken(String token) {
+        this.jwtToken = token;
+    }
+
+    public void setUserId(String userId) {
+        this.currentUserId = userId;
+    }
+
+    public String getUserId() {
+        return currentUserId;
+    }
+
+    public boolean isAuthenticated() {
+        return jwtToken != null && !jwtToken.isEmpty();
+    }
+
+    public void clearAuth() {
+        jwtToken = null;
+        currentUserId = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // HTTP helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Performs an HTTP POST on a background thread.
+     * Body is serialized to JSON via LibGDX Json. Pass {@code null} for an empty body.
+     */
+    public <T> void post(String endpoint, Object body, Class<T> responseType, ApiCallback<T> cb) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(Constants.BASE_URL + endpoint);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                if (jwtToken != null) {
+                    conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                }
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(10_000);
+                conn.setReadTimeout(15_000);
+
+                String bodyJson = (body != null) ? json.toJson(body) : "{}";
+                conn.getOutputStream().write(bodyJson.getBytes(StandardCharsets.UTF_8));
+
+                int status = conn.getResponseCode();
+                InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
+                String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+                T result = json.fromJson(responseType, resp);
+                Gdx.app.postRunnable(() -> cb.onSuccess(result));
+
+            } catch (Exception e) {
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                Gdx.app.postRunnable(() -> cb.onFailure(msg));
+            }
+        }).start();
+    }
+
+    /**
+     * Performs an HTTP GET on a background thread.
+     */
+    public <T> void get(String endpoint, Class<T> responseType, ApiCallback<T> cb) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(Constants.BASE_URL + endpoint);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
+                if (jwtToken != null) {
+                    conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
+                }
+                conn.setConnectTimeout(10_000);
+                conn.setReadTimeout(15_000);
+
+                int status = conn.getResponseCode();
+                InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
+                String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+                T result = json.fromJson(responseType, resp);
+                Gdx.app.postRunnable(() -> cb.onSuccess(result));
+
+            } catch (Exception e) {
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                Gdx.app.postRunnable(() -> cb.onFailure(msg));
+            }
+        }).start();
+    }
+}
