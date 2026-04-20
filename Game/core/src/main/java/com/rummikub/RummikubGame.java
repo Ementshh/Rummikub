@@ -1,23 +1,18 @@
 package com.rummikub;
 
 import com.badlogic.gdx.Game;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
+import com.rummikub.screens.LoginScreen;
 
 public class RummikubGame extends Game {
+
     @Override
     public void create() {
-        // Init singletons
+        // Init singletons (network / state) will be wired in later phases
         // NetworkManager.getInstance().init();
         // GameStateManager.getInstance().init();
-        // Mulai dari login screen
-        // setScreen(new LoginScreen(this));
+        setScreen(new LoginScreen(this));
     }
-    
-    @Override
-    public void render() {
-        Gdx.gl.glClearColor(0.13f, 0.18f, 0.13f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        super.render();
-    }
+
+    // render() is intentionally removed — Game.render() delegates to the
+    // active Screen, and BaseScreen.render() handles clearing + drawing.
 }

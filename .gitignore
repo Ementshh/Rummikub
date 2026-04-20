@@ -5,3 +5,4 @@ node_modules/
 *.http
 /Game/.gradle
 /Game/.gradle
+/Game/.gradle
