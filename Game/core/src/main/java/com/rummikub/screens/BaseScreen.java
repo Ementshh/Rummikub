@@ -120,6 +120,11 @@ public abstract class BaseScreen implements Screen {
         return new TextButton(text, makeButtonStyle(new Color(0.20f, 0.30f, 0.60f, 1f)));
     }
 
+    /** Creates a TextButton with a custom background color. */
+    protected TextButton makeButton(String text, Color color) {
+        return new TextButton(text, makeButtonStyle(color));
+    }
+
     /**
      * Builds a minimal TextButtonStyle backed by solid-color Pixmap textures.
      * No external skin file required.

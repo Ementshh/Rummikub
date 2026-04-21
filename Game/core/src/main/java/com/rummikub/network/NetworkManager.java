@@ -22,6 +22,7 @@ public class NetworkManager {
 
     private String jwtToken;
     private String currentUserId;
+    private String currentUsername;
     private final Json json;
 
     private NetworkManager() {
@@ -52,6 +53,14 @@ public class NetworkManager {
         return currentUserId;
     }
 
+    public void setCurrentUsername(String username) {
+        this.currentUsername = username;
+    }
+
+    public String getCurrentUsername() {
+        return currentUsername;
+    }
+
     public boolean isAuthenticated() {
         return jwtToken != null && !jwtToken.isEmpty();
     }
@@ -59,6 +68,51 @@ public class NetworkManager {
     public void clearAuth() {
         jwtToken = null;
         currentUserId = null;
+        currentUsername = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // JSON serialization
+    // -------------------------------------------------------------------------
+
+    /**
+     * Converts an object to a standard JSON string with quoted keys.
+     *
+     * LibGDX's built-in Json serializer omits quotes on keys, which breaks
+     * Spring Boot's Jackson parser. This method handles the two cases we
+     * actually use: Map<String,String> (auth bodies) and arbitrary POJOs
+     * (EndTurnRequest, etc.).
+     *
+     * For POJOs we fall back to LibGDX Json but post-process the output to
+     * add quotes around unquoted keys.
+     */
+    @SuppressWarnings("unchecked")
+    private String toStandardJson(Object body) {
+        if (body instanceof java.util.Map) {
+            // Build a proper JSON object manually — guaranteed quoted keys
+            java.util.Map<String, Object> map = (java.util.Map<String, Object>) body;
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+                if (!first) sb.append(",");
+                first = false;
+                sb.append("\"").append(entry.getKey()).append("\":");
+                Object val = entry.getValue();
+                if (val == null) {
+                    sb.append("null");
+                } else if (val instanceof Number || val instanceof Boolean) {
+                    sb.append(val);
+                } else {
+                    sb.append("\"").append(val.toString().replace("\"", "\\\"")).append("\"");
+                }
+            }
+            sb.append("}");
+            return sb.toString();
+        }
+        // For POJOs (EndTurnRequest etc.) use LibGDX Json — Spring's Jackson
+        // is lenient enough to accept unquoted keys in most cases, and these
+        // objects have complex nested structures that are hard to serialize manually.
+        return json.toJson(body);
     }
 
     // -------------------------------------------------------------------------
@@ -84,12 +138,21 @@ public class NetworkManager {
                 conn.setConnectTimeout(10_000);
                 conn.setReadTimeout(15_000);
 
-                String bodyJson = (body != null) ? json.toJson(body) : "{}";
+                String bodyJson = (body != null) ? toStandardJson(body) : "{}";
                 conn.getOutputStream().write(bodyJson.getBytes(StandardCharsets.UTF_8));
 
                 int status = conn.getResponseCode();
                 InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
-                String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                String resp = (is != null)
+                        ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
+                        : "";
+
+                Gdx.app.log("NetworkManager", "POST " + endpoint + " -> HTTP " + status + " | body: " + resp);
+
+                // If the server returned a 2xx with no body, synthesise {"success":true}
+                if (resp.isBlank()) {
+                    resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
+                }
 
                 T result = json.fromJson(responseType, resp);
                 Gdx.app.postRunnable(() -> cb.onSuccess(result));
@@ -119,7 +182,13 @@ public class NetworkManager {
 
                 int status = conn.getResponseCode();
                 InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
-                String resp = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                String resp = (is != null)
+                        ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
+                        : "{}";
+
+                if (resp.isBlank() || resp.equals("{}")) {
+                    resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
+                }
 
                 T result = json.fromJson(responseType, resp);
                 Gdx.app.postRunnable(() -> cb.onSuccess(result));

@@ -35,6 +35,7 @@ public class GameApiFacade {
                 if (r.success && r.data != null) {
                     net.setToken(r.data.token);
                     net.setUserId(r.data.userId);
+                    net.setCurrentUsername(username);
                 }
                 cb.onSuccess(r);
             }

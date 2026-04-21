@@ -1,25 +1,234 @@
 package com.rummikub.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Group;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
 import com.rummikub.RummikubGame;
+import com.rummikub.actors.TileActor;
+import com.rummikub.actors.TileDropEvent;
+import com.rummikub.command.CommandHistory;
+import com.rummikub.command.MoveWithinTableCommand;
+import com.rummikub.command.PlaceTileCommand;
+import com.rummikub.command.ReturnTileCommand;
+import com.rummikub.factory.TileActorFactory;
+import com.rummikub.network.ApiCallback;
+import com.rummikub.network.GameApiFacade;
+import com.rummikub.network.NetworkManager;
+import com.rummikub.network.dto.*;
+import com.rummikub.screens.states.*;
+import com.rummikub.state.GameStateManager;
+import com.rummikub.strategy.RackTileStrategy;
+import com.rummikub.strategy.TableTileStrategy;
+import com.rummikub.utils.Constants;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Main game screen — stub for Phase 2.
- * Hosts the state machine (WaitingTurnState / MyTurnState / SubmittingState / GameOverState).
- * Full implementation in a later phase.
+ * Main game screen.
+ *
+
+ *
+ * Integrates the State Machine (WaitingTurnState / MyTurnState /
+ * SubmittingState / GameOverState) and the Command pattern for undo.
  */
 public class GameScreen extends BaseScreen {
 
+    // -------------------------------------------------------------------------
+    // Constants (layout)
+    // -------------------------------------------------------------------------
+    private static final float HEADER_H     = 60f;
+    private static final float BUTTON_BAR_H = 60f;
+    private static final float RACK_H       = 100f;
+    private static final float TABLE_H      = Constants.SCREEN_HEIGHT - HEADER_H - BUTTON_BAR_H - RACK_H;
+
+    private static final float RACK_Y       = 0f;
+    private static final float BTN_BAR_Y    = RACK_H;
+    private static final float TABLE_Y      = RACK_H + BUTTON_BAR_H;
+    private static final float HEADER_Y     = TABLE_Y + TABLE_H;
+
+    // -------------------------------------------------------------------------
+    // Dependencies
+    // -------------------------------------------------------------------------
+    private final String gameId;
+    private final GameApiFacade facade = new GameApiFacade();
+    private final GameStateManager gsm = GameStateManager.getInstance();
+    private final CommandHistory commandHistory = new CommandHistory();
+
+    // -------------------------------------------------------------------------
+    // State machine
+    // -------------------------------------------------------------------------
     private GameScreenState currentState;
 
-    public GameScreen(RummikubGame game) {
+    // -------------------------------------------------------------------------
+    // UI components
+    // -------------------------------------------------------------------------
+    private Label timerLabel;
+    private Label turnLabel;
+    private Label meldStatusLabel;
+    private Label waitingOverlay;
+
+    private TextButton drawButton;
+    private TextButton resetButton;
+    private TextButton endTurnButton;
+
+    /** Container for rack tile actors. */
+    private Group rackGroup;
+    /** Container for table set groups. */
+    private Group tableGroup;
+
+    /** Shared font for tile rendering (owned by this screen). */
+    private BitmapFont tileFont;
+
+    // -------------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------------
+
+    public GameScreen(RummikubGame game, String gameId) {
         super(game);
+        this.gameId = gameId;
     }
+
+    // -------------------------------------------------------------------------
+    // buildUI — Template Method hook
+    // -------------------------------------------------------------------------
 
     @Override
     protected void buildUI() {
-        // Stub — UI will be built in a later phase
+        tileFont = new BitmapFont();
+
+        buildHeader();
+        buildTableArea();
+        buildButtonBar();
+        buildRackArea();
+        buildWaitingOverlay();
+
+        // Initial state: determine whose turn it is
+        if (gsm.isMyTurn()) {
+            transitionTo(new MyTurnState());
+        } else {
+            transitionTo(new WaitingTurnState());
+        }
+
+        refreshTileDisplay();
     }
+
+    // -------------------------------------------------------------------------
+    // Layout builders
+    // -------------------------------------------------------------------------
+
+    private void buildHeader() {
+        Table header = new Table();
+        header.setBounds(0, HEADER_Y, Constants.SCREEN_WIDTH, HEADER_H);
+        header.setBackground(makeColorDrawable(new Color(0.08f, 0.14f, 0.08f, 1f)));
+        header.left().pad(10);
+
+        turnLabel  = makeLabel("Giliran: ...");
+        timerLabel = makeLabel("TIMER: --:--");
+        timerLabel.setColor(Color.YELLOW);
+
+        header.add(turnLabel).expandX().left();
+        header.add(timerLabel).right().padRight(20);
+
+        stage.addActor(header);
+    }
+
+    private void buildTableArea() {
+        // Scrollable horizontal area for table sets
+        tableGroup = new Group();
+        tableGroup.setSize(3000, TABLE_H - 20); // wide enough for many sets
+
+        ScrollPane scrollPane = new ScrollPane(tableGroup, buildScrollPaneStyle());
+        scrollPane.setBounds(0, TABLE_Y, Constants.SCREEN_WIDTH, TABLE_H);
+        scrollPane.setScrollingDisabled(false, true);
+        scrollPane.setFadeScrollBars(false);
+
+        stage.addActor(scrollPane);
+    }
+
+    private void buildButtonBar() {
+        Table bar = new Table();
+        bar.setBounds(0, BTN_BAR_Y, Constants.SCREEN_WIDTH, BUTTON_BAR_H);
+        bar.setBackground(makeColorDrawable(new Color(0.10f, 0.10f, 0.10f, 1f)));
+        bar.pad(8);
+
+        drawButton    = makeButton("DRAW",     new Color(0.20f, 0.40f, 0.70f, 1f));
+        resetButton   = makeButton("RESET",    new Color(0.50f, 0.35f, 0.10f, 1f));
+        endTurnButton = makeButton("END TURN", new Color(0.15f, 0.55f, 0.15f, 1f));
+        meldStatusLabel = makeLabel("Meld: BELUM");
+        meldStatusLabel.setColor(Color.ORANGE);
+
+        bar.add(drawButton).width(120).height(44).padRight(12);
+        bar.add(resetButton).width(120).height(44).padRight(12);
+        bar.add(endTurnButton).width(140).height(44).padRight(20);
+        bar.add(meldStatusLabel).expandX().left();
+
+        stage.addActor(bar);
+
+        // Listeners
+        drawButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                onDrawClicked();
+            }
+        });
+
+        resetButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                onResetClicked();
+            }
+        });
+
+        endTurnButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                onEndTurnClicked();
+            }
+        });
+    }
+
+    private void buildRackArea() {
+        // Background
+        Table rackBg = new Table();
+        rackBg.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
+        rackBg.setBackground(makeColorDrawable(new Color(0.30f, 0.20f, 0.10f, 1f)));
+        stage.addActor(rackBg);
+
+        // Username label
+        String username = NetworkManager.getInstance().getCurrentUsername();
+        Label nameLabel = makeLabel(username != null ? username : "Pemain");
+        nameLabel.setPosition(10, RACK_Y + RACK_H - 18);
+        stage.addActor(nameLabel);
+
+        // Group for tile actors
+        rackGroup = new Group();
+        rackGroup.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
+        stage.addActor(rackGroup);
+    }
+
+    private void buildWaitingOverlay() {
+        waitingOverlay = makeLabel("Menunggu giliran pemain lain...");
+        waitingOverlay.setColor(new Color(1f, 1f, 0.5f, 1f));
+        waitingOverlay.setFontScale(1.4f);
+        waitingOverlay.setPosition(
+                Constants.SCREEN_WIDTH / 2f - 200,
+                TABLE_Y + TABLE_H / 2f);
+        waitingOverlay.setVisible(false);
+        stage.addActor(waitingOverlay);
+    }
+
+    // -------------------------------------------------------------------------
+    // update — Template Method hook
+    // -------------------------------------------------------------------------
 
     @Override
     protected void update(float delta) {
@@ -44,31 +253,409 @@ public class GameScreen extends BaseScreen {
     }
 
     // -------------------------------------------------------------------------
-    // State callbacks — stubs to be implemented in later phases
+    // State callbacks (called by state objects)
     // -------------------------------------------------------------------------
 
     /** Enables or disables interactive controls based on whose turn it is. */
     public void setControlsEnabled(boolean enabled) {
-        Gdx.app.log("GameScreen", "setControlsEnabled: " + enabled);
+        drawButton.setDisabled(!enabled);
+        resetButton.setDisabled(!enabled);
+        endTurnButton.setDisabled(!enabled);
+        waitingOverlay.setVisible(!enabled);
+
+        // Toggle drag on rack tiles
+        for (Actor a : rackGroup.getChildren()) {
+            if (a instanceof TileActor) {
+                ((TileActor) a).setStrategy(enabled
+                        ? new RackTileStrategy()
+                        : new RackTileStrategy()); // strategy already handles isDraggable
+                // We rely on the DragListener being active; disable via a flag
+                a.setTouchable(enabled
+                        ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
+                        : com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+            }
+        }
     }
 
     /** Polls the server for the latest game state. */
     public void pollGameState() {
-        Gdx.app.log("GameScreen", "pollGameState()");
+        facade.getGameState(gameId, new ApiCallback<GameStateResponse>() {
+            @Override
+            public void onSuccess(GameStateResponse r) {
+                if (r == null || !r.success || r.data == null) return;
+
+                if ("FINISHED".equals(r.data.status)) {
+                    gsm.loadFromServer(r.data);
+                    transitionTo(new GameOverState());
+                    return;
+                }
+
+                gsm.loadFromServer(r.data);
+                refreshTileDisplay();
+                updateMeldStatus();
+
+                if (gsm.isMyTurn() && !(currentState instanceof MyTurnState)) {
+                    transitionTo(new MyTurnState());
+                }
+            }
+
+            @Override
+            public void onFailure(String err) {
+                Gdx.app.log("GameScreen", "Poll error: " + err);
+            }
+        });
     }
 
     /** Updates the on-screen countdown timer label. */
     public void updateTimerDisplay(int seconds) {
-        Gdx.app.log("GameScreen", "updateTimerDisplay: " + seconds);
+        int m = seconds / 60;
+        int s = seconds % 60;
+        timerLabel.setText(String.format("TIMER: %02d:%02d", m, s));
+        timerLabel.setColor(seconds <= 15 ? Color.RED : Color.YELLOW);
     }
 
-    /** Called when the turn timer reaches zero. */
+    /** Called when the turn timer reaches zero — auto-draw. */
     public void onTimerExpired() {
-        Gdx.app.log("GameScreen", "onTimerExpired()");
+        transitionTo(new SubmittingState());
+        facade.drawTile(gameId, new ApiCallback<GenericResponse>() {
+            @Override
+            public void onSuccess(GenericResponse r) {
+                commandHistory.clear();
+                pollGameState();
+                transitionTo(new WaitingTurnState());
+            }
+
+            @Override
+            public void onFailure(String err) {
+                Gdx.app.log("GameScreen", "Auto-draw failed: " + err);
+                transitionTo(new WaitingTurnState());
+            }
+        });
     }
 
     /** Shows the game-over result panel. */
     public void showGameOverPanel() {
-        Gdx.app.log("GameScreen", "showGameOverPanel()");
+        String winner = gsm.getWinnerUsername();
+        game.setScreen(new GameOverScreen(game, winner));
+    }
+
+    // -------------------------------------------------------------------------
+    // Button handlers
+    // -------------------------------------------------------------------------
+
+    private void onDrawClicked() {
+        transitionTo(new SubmittingState());
+        facade.drawTile(gameId, new ApiCallback<GenericResponse>() {
+            @Override
+            public void onSuccess(GenericResponse r) {
+                commandHistory.clear();
+                if (r.success) {
+                    pollGameState();
+                    transitionTo(new WaitingTurnState());
+                } else {
+                    Gdx.app.log("GameScreen", "Draw failed: " + r.error);
+                    transitionTo(new MyTurnState());
+                }
+            }
+
+            @Override
+            public void onFailure(String err) {
+                Gdx.app.log("GameScreen", "Draw error: " + err);
+                transitionTo(new MyTurnState());
+            }
+        });
+    }
+
+    private void onResetClicked() {
+        commandHistory.undoAll();
+        gsm.resetToSnapshot();
+        refreshTileDisplay();
+    }
+
+    private void onEndTurnClicked() {
+        EndTurnRequest req = gsm.buildEndTurnRequest();
+        transitionTo(new SubmittingState());
+
+        facade.endTurn(gameId, req, new ApiCallback<EndTurnResponse>() {
+            @Override
+            public void onSuccess(EndTurnResponse r) {
+                if (r.success) {
+                    commandHistory.clear();
+                    if (r.data != null && r.data.gameOver) {
+                        gsm.setWinnerUsername(r.data.winner);
+                        transitionTo(new GameOverState());
+                    } else {
+                        pollGameState();
+                        transitionTo(new WaitingTurnState());
+                    }
+                } else {
+                    Gdx.app.log("GameScreen", "End-turn rejected: " + r.error);
+                    transitionTo(new MyTurnState());
+                }
+            }
+
+            @Override
+            public void onFailure(String err) {
+                Gdx.app.log("GameScreen", "End-turn error: " + err);
+                transitionTo(new MyTurnState());
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Tile display
+    // -------------------------------------------------------------------------
+
+    /**
+     * Rebuilds all tile actors from the current GameStateManager state.
+     * Called after every poll and after undo/reset.
+     */
+    public void refreshTileDisplay() {
+        rebuildRackTiles();
+        rebuildTableTiles();
+        updateTurnLabel();
+        updateMeldStatus();
+    }
+
+    private void rebuildRackTiles() {
+        // Dispose old actors
+        for (Actor a : rackGroup.getChildren()) {
+            if (a instanceof TileActor) ((TileActor) a).dispose();
+        }
+        rackGroup.clearChildren();
+
+        List<TileDto> rack = gsm.getMyRackTiles();
+        float tileW = Constants.TILE_WIDTH + 4f;
+        float startX = 10f;
+        float tileY  = RACK_Y + (RACK_H - Constants.TILE_HEIGHT) / 2f;
+
+        for (int i = 0; i < rack.size(); i++) {
+            TileDto dto = rack.get(i);
+            TileActor actor = TileActorFactory.create(dto, new RackTileStrategy());
+            actor.setPosition(startX + i * tileW, tileY);
+            attachDropListener(actor, "RACK", -1);
+            rackGroup.addActor(actor);
+        }
+    }
+
+    private void rebuildTableTiles() {
+        // Dispose old actors
+        for (Actor a : tableGroup.getChildren()) {
+            if (a instanceof TileActor) ((TileActor) a).dispose();
+        }
+        tableGroup.clearChildren();
+
+        List<TableSetDto> sets = gsm.getTableSets();
+        float setMargin = 12f;
+        float tileW     = (Constants.TILE_WIDTH * 0.9f) + 2f;
+        float cursorX   = setMargin;
+        float tileY     = (TABLE_H - Constants.TILE_HEIGHT * 0.9f) / 2f;
+
+        for (int si = 0; si < sets.size(); si++) {
+            TableSetDto set = sets.get(si);
+
+            // Set label
+            Label setLabel = makeLabel(set.setType != null ? set.setType : "?");
+            setLabel.setFontScale(0.7f);
+            setLabel.setColor(set.setType != null && set.setType.equals("RUN")
+                    ? new Color(0.4f, 0.7f, 1f, 1f)
+                    : new Color(1f, 0.9f, 0.3f, 1f));
+            setLabel.setPosition(cursorX, tileY + Constants.TILE_HEIGHT * 0.9f + 4);
+            tableGroup.addActor(setLabel);
+
+            // Tiles in this set
+            if (set.tileIds != null) {
+                for (int ti = 0; ti < set.tileIds.size(); ti++) {
+                    int tileId = set.tileIds.get(ti);
+                    TileDto dto = findTileById(tileId);
+                    if (dto == null) continue;
+
+                    TileActor actor = TileActorFactory.create(dto, new TableTileStrategy());
+                    actor.setPosition(cursorX + ti * tileW, tileY);
+                    final int setIndex = si;
+                    attachDropListener(actor, "TABLE", setIndex);
+                    tableGroup.addActor(actor);
+                }
+                cursorX += set.tileIds.size() * tileW + setMargin * 2;
+            } else {
+                cursorX += setMargin * 2;
+            }
+        }
+
+        // "New set" drop zone at the end
+        addNewSetDropZone(cursorX, tileY);
+    }
+
+    /**
+     * Adds an invisible drop zone that creates a new set when a tile is dropped on it.
+     */
+    private void addNewSetDropZone(float x, float y) {
+        Actor zone = new Actor();
+        zone.setBounds(x, y, Constants.TILE_WIDTH, Constants.TILE_HEIGHT);
+        zone.addListener(new DragListener() {
+            @Override
+            public void dragStop(InputEvent event, float x, float y, int pointer) {
+                // Drop zone — handled by TileDropEvent on the tile itself
+            }
+        });
+        tableGroup.addActor(zone);
+    }
+
+    /**
+     * Attaches a TileDropEvent listener to a TileActor that executes the
+     * appropriate Command when the tile is dropped.
+     */
+    private void attachDropListener(TileActor actor, String sourceArea, int sourceSetIndex) {
+        actor.addListener(new com.badlogic.gdx.scenes.scene2d.EventListener() {
+            @Override
+            public boolean handle(com.badlogic.gdx.scenes.scene2d.Event event) {
+                if (!(event instanceof TileDropEvent)) return false;
+                if (!(currentState instanceof MyTurnState)) return false;
+
+                TileDropEvent drop = (TileDropEvent) event;
+                float dropX = drop.dropX;
+                float dropY = drop.dropY;
+
+                // Determine drop target
+                int targetSetIndex = findSetIndexAtPosition(dropX, dropY);
+
+                if (dropY >= RACK_Y && dropY < RACK_Y + RACK_H) {
+                    // Dropped back onto rack
+                    if ("TABLE".equals(sourceArea)) {
+                        ReturnTileCommand cmd = new ReturnTileCommand(
+-                                actor.getTileData().id, sourceSetIndex);
+                        commandHistory.execute(cmd);
+                        refreshTileDisplay();
+                    }
+                } else if (dropY >= TABLE_Y && dropY < TABLE_Y + TABLE_H) {
+                    // Dropped onto table area
+                    if ("RACK".equals(sourceArea)) {
+                        boolean isNewSet = (targetSetIndex == -1);
+                        PlaceTileCommand cmd = new PlaceTileCommand(
+                                actor.getTileData().id, isNewSet,
+                                isNewSet ? 0 : targetSetIndex, "RUN");
+                        commandHistory.execute(cmd);
+                        refreshTileDisplay();
+                    } else if ("TABLE".equals(sourceArea) && targetSetIndex != sourceSetIndex) {
+                        MoveWithinTableCommand cmd = new MoveWithinTableCommand(
+                                actor.getTileData().id, sourceSetIndex, targetSetIndex);
+                        commandHistory.execute(cmd);
+                        refreshTileDisplay();
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private TileDto findTileById(int id) {
+        // Search rack
+        for (TileDto t : gsm.getMyRackTiles()) {
+            if (t.id == id) return t;
+        }
+        // Search table sets
+        for (TableSetDto set : gsm.getTableSets()) {
+            if (set.tileIds == null) continue;
+            // We need the full TileDto — the server only gives us IDs in sets.
+            // We reconstruct a minimal DTO from the rack snapshot if available.
+        }
+        // Fallback: create a placeholder DTO
+        TileDto placeholder = new TileDto();
+        placeholder.id = id;
+        placeholder.color = "BLACK";
+        placeholder.number = 0;
+        placeholder.isJoker = false;
+        return placeholder;
+    }
+
+    /**
+     * Returns the index of the table set whose horizontal span contains dropX,
+     * or -1 to indicate "create new set".
+     */
+    private int findSetIndexAtPosition(float dropX, float dropY) {
+        if (dropY < TABLE_Y || dropY >= TABLE_Y + TABLE_H) return -1;
+
+        List<TableSetDto> sets = gsm.getTableSets();
+        float setMargin = 12f;
+        float tileW     = (Constants.TILE_WIDTH * 0.9f) + 2f;
+        float cursorX   = setMargin;
+
+        for (int si = 0; si < sets.size(); si++) {
+            TableSetDto set = sets.get(si);
+            int count = (set.tileIds != null) ? set.tileIds.size() : 0;
+            float setWidth = count * tileW + setMargin * 2;
+            if (dropX >= cursorX && dropX < cursorX + setWidth) {
+                return si;
+            }
+            cursorX += setWidth;
+        }
+        return -1; // new set
+    }
+
+    private void updateTurnLabel() {
+        if (gsm.isMyTurn()) {
+            turnLabel.setText("Giliran: KAMU");
+            turnLabel.setColor(Color.GREEN);
+        } else {
+            String currentId = gsm.getCurrentTurnUserId();
+            String name = resolveUsername(currentId);
+            turnLabel.setText("Giliran: " + name);
+            turnLabel.setColor(Color.WHITE);
+        }
+    }
+
+    private void updateMeldStatus() {
+        if (gsm.isHasDoneInitialMeld()) {
+            meldStatusLabel.setText("Meld: SUDAH ✓");
+            meldStatusLabel.setColor(Color.GREEN);
+        } else {
+            meldStatusLabel.setText("Meld: BELUM (min 30 poin)");
+            meldStatusLabel.setColor(Color.ORANGE);
+        }
+    }
+
+    private String resolveUsername(String userId) {
+        if (userId == null) return "?";
+        for (ParticipantDto p : gsm.getParticipants()) {
+            if (userId.equals(p.userId)) return p.username;
+        }
+        return userId;
+    }
+
+    private com.badlogic.gdx.scenes.scene2d.utils.Drawable makeColorDrawable(Color color) {
+        com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(
+                1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
+        pm.setColor(color);
+        pm.fill();
+        com.badlogic.gdx.graphics.Texture tex = new com.badlogic.gdx.graphics.Texture(pm);
+        pm.dispose();
+        return new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
+                new com.badlogic.gdx.graphics.g2d.TextureRegion(tex));
+    }
+
+    private ScrollPane.ScrollPaneStyle buildScrollPaneStyle() {
+        ScrollPane.ScrollPaneStyle style = new ScrollPane.ScrollPaneStyle();
+        style.background = makeColorDrawable(new Color(0.10f, 0.20f, 0.10f, 1f));
+        return style;
+    }
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
+
+    @Override
+    protected void onDispose() {
+        if (tileFont != null) tileFont.dispose();
+        // Dispose tile actors
+        for (Actor a : rackGroup.getChildren()) {
+            if (a instanceof TileActor) ((TileActor) a).dispose();
+        }
+        for (Actor a : tableGroup.getChildren()) {
+            if (a instanceof TileActor) ((TileActor) a).dispose();
+        }
     }
 }
