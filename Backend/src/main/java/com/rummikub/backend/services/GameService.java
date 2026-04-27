@@ -11,6 +11,8 @@ import com.rummikub.backend.repositories.GameParticipantRepository;
 import com.rummikub.backend.repositories.GameRepository;
 import com.rummikub.backend.repositories.GameTileRepository;
 import com.rummikub.backend.repositories.UserRepository;
+import com.rummikub.backend.models.TableSet;
+import com.rummikub.backend.repositories.TableSetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class GameService {
     @Autowired private GameParticipantRepository participantRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private GameTileRepository gameTileRepository;
+    @Autowired private TableSetRepository tableSetRepository;
     @Autowired private RummikubLogicService rummikubLogicService;
     @Autowired private TurnValidatorService turnValidatorService;
 
@@ -159,5 +162,67 @@ public class GameService {
 
         switchToNextTurn(game);
         return Map.of("message", "Ubin diambil. Giliran berpindah.", "nextTurnId", game.getCurrentTurnParticipant().getId(), "drawnTileId", drawnTile.getTile().getId());
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getGameState(UUID gameId, UUID userId) {
+        Game game = gameRepository.findById(gameId).orElseThrow(() -> new RuntimeException("Game tidak ditemukan."));
+        List<GameParticipant> participants = participantRepository.findByGameIdOrderByTurnOrderAsc(gameId);
+
+        List<Map<String, Object>> participantDtos = new ArrayList<>();
+        for (GameParticipant p : participants) {
+            participantDtos.add(Map.of(
+                "userId", p.getUser().getId().toString(),
+                "username", p.getUser().getUsername(),
+                "turnOrder", p.getTurnOrder(),
+                "score", p.getScore()
+            ));
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", game.getId().toString());
+        data.put("status", game.getStatus().toString());
+        data.put("currentTurnUserId", game.getCurrentTurnParticipant() != null ? game.getCurrentTurnParticipant().getUser().getId().toString() : null);
+        data.put("participants", participantDtos);
+        data.put("winner", null); 
+
+        Optional<GameParticipant> requesterOpt = participantRepository.findByGameIdAndUserId(gameId, userId);
+        if (requesterOpt.isPresent()) {
+            GameParticipant requester = requesterOpt.get();
+            data.put("hasDoneInitialMeld", requester.isHasDoneInitialMeld());
+
+            List<GameTile> rackTiles = gameTileRepository.findByGameIdAndParticipantIdAndLocation(gameId, requester.getId(), TileLocation.RACK);
+            List<Map<String, Object>> rackDtos = new ArrayList<>();
+            for (GameTile gt : rackTiles) {
+                rackDtos.add(Map.of(
+                    "id", gt.getTile().getId(),
+                    "number", gt.getTile().getNumber(),
+                    "color", gt.getTile().getColor().toString(),
+                    "isJoker", gt.getTile().isJoker()
+                ));
+            }
+            data.put("myRackTiles", rackDtos);
+        }
+
+        List<TableSet> sets = tableSetRepository.findByGameId(gameId);
+        List<GameTile> tableTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.TABLE);
+        
+        Map<UUID, List<Integer>> tilesBySet = new HashMap<>();
+        for (GameTile gt : tableTiles) {
+            if (gt.getTableSet() != null) {
+                tilesBySet.computeIfAbsent(gt.getTableSet().getId(), k -> new ArrayList<>()).add(gt.getTile().getId());
+            }
+        }
+
+        List<Map<String, Object>> tableSetDtos = new ArrayList<>();
+        for (TableSet ts : sets) {
+            tableSetDtos.add(Map.of(
+                "setType", ts.getSetType().toString(),
+                "tileIds", tilesBySet.getOrDefault(ts.getId(), new ArrayList<>())
+            ));
+        }
+        data.put("tableSets", tableSetDtos);
+
+        return data;
     }
 }

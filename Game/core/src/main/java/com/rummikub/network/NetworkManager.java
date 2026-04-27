@@ -190,6 +190,8 @@ public class NetworkManager {
                     resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
                 }
 
+                Gdx.app.log("NetworkManager", "GET " + endpoint + " -> HTTP " + status + " | body: " + resp);
+
                 T result = json.fromJson(responseType, resp);
                 Gdx.app.postRunnable(() -> cb.onSuccess(result));
 

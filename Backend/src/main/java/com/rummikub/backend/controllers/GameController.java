@@ -82,4 +82,14 @@ public class GameController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
         }
     }
+
+    @GetMapping("/{id}/state")
+    public ResponseEntity<?> getGameState(@PathVariable UUID id) {
+        try {
+            Map<String, Object> result = gameService.getGameState(id, getCurrentUserId());
+            return ResponseEntity.ok(Map.of("success", true, "data", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
 }

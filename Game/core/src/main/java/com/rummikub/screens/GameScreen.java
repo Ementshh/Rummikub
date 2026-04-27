@@ -72,8 +72,8 @@ public class GameScreen extends BaseScreen {
     // UI components
     // -------------------------------------------------------------------------
     private Label timerLabel;
-    private Label turnLabel;
-    private Label meldStatusLabel;
+    private Label turnInfoLabel;
+    private Label statusLabel;
     private Label waitingOverlay;
 
     private TextButton drawButton;
@@ -153,12 +153,12 @@ public class GameScreen extends BaseScreen {
         }
 
         opponentNameLabel = makeLabel(opponentName);
-        turnLabel  = makeLabel("Giliran: ...");
+        turnInfoLabel  = makeLabel("Giliran: ...");
         timerLabel = makeLabel("TIMER: --:--");
         timerLabel.setColor(Color.YELLOW);
 
         header.add(opponentNameLabel).expandX().left();
-        header.add(turnLabel).expandX().center();
+        header.add(turnInfoLabel).expandX().center();
         header.add(timerLabel).right().padRight(20);
 
         stage.addActor(header);
@@ -186,8 +186,8 @@ public class GameScreen extends BaseScreen {
         drawButton    = makeButton("DRAW",     new Color(0.20f, 0.40f, 0.70f, 1f));
         resetButton   = makeButton("RESET",    new Color(0.50f, 0.35f, 0.10f, 1f));
         endTurnButton = makeButton("END TURN", new Color(0.15f, 0.55f, 0.15f, 1f));
-        meldStatusLabel = makeLabel("Meld: BELUM (min 30 poin)");
-        meldStatusLabel.setColor(Color.ORANGE);
+        statusLabel = makeLabel("Meld: BELUM (min 30 poin)");
+        statusLabel.setColor(Color.ORANGE);
 
         // All buttons disabled by default — enabled only when MyTurnState is active
         drawButton.setDisabled(true);
@@ -197,7 +197,7 @@ public class GameScreen extends BaseScreen {
         bar.add(drawButton).width(120).height(44).padRight(12);
         bar.add(resetButton).width(120).height(44).padRight(12);
         bar.add(endTurnButton).width(140).height(44).padRight(20);
-        bar.add(meldStatusLabel).expandX().left();
+        bar.add(statusLabel).expandX().left();
 
         stage.addActor(bar);
 
@@ -225,11 +225,6 @@ public class GameScreen extends BaseScreen {
     }
 
     private void buildRackArea() {
-        // Background
-        Table rackBg = new Table();
-        rackBg.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
-        rackBg.setBackground(makeColorDrawable(new Color(0.30f, 0.20f, 0.10f, 1f)));
-        stage.addActor(rackBg);
 
         // Username label
         String username = NetworkManager.getInstance().getCurrentUsername();
@@ -323,7 +318,7 @@ public class GameScreen extends BaseScreen {
 
                 gsm.loadFromServer(r.data);
                 refreshTileDisplay();
-                updateMeldStatus();
+                updateStatusLabel();
 
                 if (gsm.isMyTurn() && !(currentState instanceof MyTurnState)) {
                     transitionTo(new MyTurnState());
@@ -444,8 +439,8 @@ public class GameScreen extends BaseScreen {
     public void refreshTileDisplay() {
         rebuildRackDisplay();
         rebuildTableDisplay();
-        updateTurnLabel();
-        updateMeldStatus();
+        updateTurnInfo();
+        updateStatusLabel();
     }
 
     public void rebuildRackDisplay() {
@@ -631,7 +626,7 @@ public class GameScreen extends BaseScreen {
         return -1; // new set
     }
 
-    private void updateTurnLabel() {
+    private void updateTurnInfo() {
         String localUser = NetworkManager.getInstance().getCurrentUsername();
 
         // Update opponent name label (left header) — first participant that isn't us
@@ -643,23 +638,23 @@ public class GameScreen extends BaseScreen {
         }
 
         if (gsm.isMyTurn()) {
-            turnLabel.setText("Giliran: KAMU");
-            turnLabel.setColor(Color.GREEN);
+            turnInfoLabel.setText("Giliran: KAMU");
+            turnInfoLabel.setColor(Color.GREEN);
         } else {
             String currentId = gsm.getCurrentTurnUserId();
             String name = resolveUsername(currentId);
-            turnLabel.setText("Giliran: " + name);
-            turnLabel.setColor(Color.WHITE);
+            turnInfoLabel.setText("Giliran: " + name);
+            turnInfoLabel.setColor(Color.WHITE);
         }
     }
 
-    private void updateMeldStatus() {
+    private void updateStatusLabel() {
         if (gsm.isHasDoneInitialMeld()) {
-            meldStatusLabel.setText("Meld: SUDAH ✓");
-            meldStatusLabel.setColor(Color.GREEN);
+            statusLabel.setText("Meld: SUDAH ✓");
+            statusLabel.setColor(Color.GREEN);
         } else {
-            meldStatusLabel.setText("Meld: BELUM (min 30 poin)");
-            meldStatusLabel.setColor(Color.ORANGE);
+            statusLabel.setText("Meld: BELUM (min 30 poin)");
+            statusLabel.setColor(Color.ORANGE);
         }
     }
 
@@ -706,5 +701,19 @@ public class GameScreen extends BaseScreen {
                 if (a instanceof TileActor) ((TileActor) a).dispose();
             }
         }
+    }
+
+    @Override
+    protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
+        // Gambar background rack area (kotak coklat tua)
+        batch.end();
+        sr.begin(ShapeRenderer.ShapeType.Filled);
+        sr.setColor(0.35f, 0.22f, 0.10f, 1f);
+        sr.rect(0, 0, 1280, 100);
+        // Border atas rack
+        sr.setColor(0.55f, 0.38f, 0.18f, 1f);
+        sr.rect(0, 98, 1280, 3);
+        sr.end();
+        batch.begin();
     }
 }
