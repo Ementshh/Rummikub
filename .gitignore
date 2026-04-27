@@ -49,3 +49,5 @@ out/
 Game/.gradle/w
 *.bin
 *.jar
+*.bin
+*.jar

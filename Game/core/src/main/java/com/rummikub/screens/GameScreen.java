@@ -706,7 +706,6 @@ public class GameScreen extends BaseScreen {
     @Override
     protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
         // Gambar background rack area (kotak coklat tua)
-        batch.end();
         sr.begin(ShapeRenderer.ShapeType.Filled);
         sr.setColor(0.35f, 0.22f, 0.10f, 1f);
         sr.rect(0, 0, 1280, 100);
@@ -714,6 +713,5 @@ public class GameScreen extends BaseScreen {
         sr.setColor(0.55f, 0.38f, 0.18f, 1f);
         sr.rect(0, 98, 1280, 3);
         sr.end();
-        batch.begin();
     }
 }
