@@ -49,7 +49,7 @@ public class LobbyScreen extends BaseScreen {
 
         Label welcomeLabel = makeLabel("Selamat datang, " + username + "!");
 
-        Label orLabel      = makeLabel("— Atau masuk ke game —");
+        Label orLabel      = makeLabel("Atau masuk ke game");
 
         errorLabel = makeLabel("");
         errorLabel.setColor(Color.RED);

@@ -59,9 +59,9 @@ public class GameScreen extends BaseScreen {
     // Dependencies
     // -------------------------------------------------------------------------
     private final String gameId;
-    private final GameApiFacade facade = new GameApiFacade();
-    private final GameStateManager gsm = GameStateManager.getInstance();
-    private final CommandHistory commandHistory = new CommandHistory();
+    private final GameApiFacade facade;
+    private final GameStateManager gsm;
+    private final CommandHistory commandHistory;
 
     // -------------------------------------------------------------------------
     // State machine
@@ -84,6 +84,11 @@ public class GameScreen extends BaseScreen {
     private Group rackGroup;
     /** Container for table set groups. */
     private Group tableGroup;
+    /** Horizontal scroll pane wrapping tableGroup. */
+    private ScrollPane tableScroll;
+
+    /** Label showing the opponent's name in the left side of the header. */
+    private Label opponentNameLabel;
 
     /** Shared font for tile rendering (owned by this screen). */
     private BitmapFont tileFont;
@@ -95,6 +100,9 @@ public class GameScreen extends BaseScreen {
     public GameScreen(RummikubGame game, String gameId) {
         super(game);
         this.gameId = gameId;
+        this.facade = new GameApiFacade();
+        this.gsm = GameStateManager.getInstance();
+        this.commandHistory = new CommandHistory();
     }
 
     // -------------------------------------------------------------------------
@@ -110,6 +118,9 @@ public class GameScreen extends BaseScreen {
         buildButtonBar();
         buildRackArea();
         buildWaitingOverlay();
+
+        // Fetch latest state from server before determining initial state
+        pollGameState();
 
         // Initial state: determine whose turn it is
         if (gsm.isMyTurn()) {
@@ -131,11 +142,23 @@ public class GameScreen extends BaseScreen {
         header.setBackground(makeColorDrawable(new Color(0.08f, 0.14f, 0.08f, 1f)));
         header.left().pad(10);
 
+        // Resolve opponent name from participants at build time (may be empty until first poll)
+        String opponentName = "";
+        String localUser = NetworkManager.getInstance().getCurrentUsername();
+        for (ParticipantDto p : gsm.getParticipants()) {
+            if (localUser == null || !localUser.equals(p.username)) {
+                opponentName = p.username;
+                break;
+            }
+        }
+
+        opponentNameLabel = makeLabel(opponentName);
         turnLabel  = makeLabel("Giliran: ...");
         timerLabel = makeLabel("TIMER: --:--");
         timerLabel.setColor(Color.YELLOW);
 
-        header.add(turnLabel).expandX().left();
+        header.add(opponentNameLabel).expandX().left();
+        header.add(turnLabel).expandX().center();
         header.add(timerLabel).right().padRight(20);
 
         stage.addActor(header);
@@ -146,12 +169,12 @@ public class GameScreen extends BaseScreen {
         tableGroup = new Group();
         tableGroup.setSize(3000, TABLE_H - 20); // wide enough for many sets
 
-        ScrollPane scrollPane = new ScrollPane(tableGroup, buildScrollPaneStyle());
-        scrollPane.setBounds(0, TABLE_Y, Constants.SCREEN_WIDTH, TABLE_H);
-        scrollPane.setScrollingDisabled(false, true);
-        scrollPane.setFadeScrollBars(false);
+        tableScroll = new ScrollPane(tableGroup, buildScrollPaneStyle());
+        tableScroll.setBounds(0, TABLE_Y, Constants.SCREEN_WIDTH, TABLE_H);
+        tableScroll.setScrollingDisabled(false, true);
+        tableScroll.setFadeScrollBars(false);
 
-        stage.addActor(scrollPane);
+        stage.addActor(tableScroll);
     }
 
     private void buildButtonBar() {
@@ -163,8 +186,13 @@ public class GameScreen extends BaseScreen {
         drawButton    = makeButton("DRAW",     new Color(0.20f, 0.40f, 0.70f, 1f));
         resetButton   = makeButton("RESET",    new Color(0.50f, 0.35f, 0.10f, 1f));
         endTurnButton = makeButton("END TURN", new Color(0.15f, 0.55f, 0.15f, 1f));
-        meldStatusLabel = makeLabel("Meld: BELUM");
+        meldStatusLabel = makeLabel("Meld: BELUM (min 30 poin)");
         meldStatusLabel.setColor(Color.ORANGE);
+
+        // All buttons disabled by default — enabled only when MyTurnState is active
+        drawButton.setDisabled(true);
+        resetButton.setDisabled(true);
+        endTurnButton.setDisabled(true);
 
         bar.add(drawButton).width(120).height(44).padRight(12);
         bar.add(resetButton).width(120).height(44).padRight(12);
@@ -263,17 +291,18 @@ public class GameScreen extends BaseScreen {
         endTurnButton.setDisabled(!enabled);
         waitingOverlay.setVisible(!enabled);
 
+        com.badlogic.gdx.scenes.scene2d.Touchable touchable = enabled
+                ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
+                : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
+
         // Toggle drag on rack tiles
         for (Actor a : rackGroup.getChildren()) {
-            if (a instanceof TileActor) {
-                ((TileActor) a).setStrategy(enabled
-                        ? new RackTileStrategy()
-                        : new RackTileStrategy()); // strategy already handles isDraggable
-                // We rely on the DragListener being active; disable via a flag
-                a.setTouchable(enabled
-                        ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
-                        : com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
-            }
+            a.setTouchable(touchable);
+        }
+
+        // Toggle drag on table tiles
+        for (Actor a : tableGroup.getChildren()) {
+            a.setTouchable(touchable);
         }
     }
 
@@ -411,13 +440,14 @@ public class GameScreen extends BaseScreen {
      * Called after every poll and after undo/reset.
      */
     public void refreshTileDisplay() {
-        rebuildRackTiles();
-        rebuildTableTiles();
+        rebuildRackDisplay();
+        rebuildTableDisplay();
         updateTurnLabel();
         updateMeldStatus();
     }
 
-    private void rebuildRackTiles() {
+    public void rebuildRackDisplay() {
+        if (rackGroup == null) return;
         // Dispose old actors
         for (Actor a : rackGroup.getChildren()) {
             if (a instanceof TileActor) ((TileActor) a).dispose();
@@ -425,7 +455,7 @@ public class GameScreen extends BaseScreen {
         rackGroup.clearChildren();
 
         List<TileDto> rack = gsm.getMyRackTiles();
-        float tileW = Constants.TILE_WIDTH + 4f;
+        float tileW  = Constants.TILE_WIDTH + 4f;
         float startX = 10f;
         float tileY  = RACK_Y + (RACK_H - Constants.TILE_HEIGHT) / 2f;
 
@@ -438,7 +468,8 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private void rebuildTableTiles() {
+    public void rebuildTableDisplay() {
+        if (tableGroup == null) return;
         // Dispose old actors
         for (Actor a : tableGroup.getChildren()) {
             if (a instanceof TileActor) ((TileActor) a).dispose();
@@ -447,39 +478,42 @@ public class GameScreen extends BaseScreen {
 
         List<TableSetDto> sets = gsm.getTableSets();
         float setMargin = 12f;
-        float tileW     = (Constants.TILE_WIDTH * 0.9f) + 2f;
+        float tileW     = Constants.TILE_WIDTH * 0.85f + 2f;
+        float tileH     = Constants.TILE_HEIGHT * 0.85f;
         float cursorX   = setMargin;
-        float tileY     = (TABLE_H - Constants.TILE_HEIGHT * 0.9f) / 2f;
+        float tileY     = (TABLE_H - tileH) / 2f;
 
         for (int si = 0; si < sets.size(); si++) {
             TableSetDto set = sets.get(si);
 
-            // Set label
+            if (set.tileIds == null) {
+                Gdx.app.log("GameScreen", "rebuildTableDisplay: set " + si + " has null tileIds, skipping");
+                cursorX += setMargin * 2;
+                continue;
+            }
+
+            // Set type label above the tiles
             Label setLabel = makeLabel(set.setType != null ? set.setType : "?");
             setLabel.setFontScale(0.7f);
             setLabel.setColor(set.setType != null && set.setType.equals("RUN")
                     ? new Color(0.4f, 0.7f, 1f, 1f)
                     : new Color(1f, 0.9f, 0.3f, 1f));
-            setLabel.setPosition(cursorX, tileY + Constants.TILE_HEIGHT * 0.9f + 4);
+            setLabel.setPosition(cursorX, tileY + tileH + 4);
             tableGroup.addActor(setLabel);
 
             // Tiles in this set
-            if (set.tileIds != null) {
-                for (int ti = 0; ti < set.tileIds.size(); ti++) {
-                    int tileId = set.tileIds.get(ti);
-                    TileDto dto = findTileById(tileId);
-                    if (dto == null) continue;
+            for (int ti = 0; ti < set.tileIds.size(); ti++) {
+                int tileId = set.tileIds.get(ti);
+                TileDto dto = findTileById(tileId);
+                if (dto == null) continue;
 
-                    TileActor actor = TileActorFactory.create(dto, new TableTileStrategy());
-                    actor.setPosition(cursorX + ti * tileW, tileY);
-                    final int setIndex = si;
-                    attachDropListener(actor, "TABLE", setIndex);
-                    tableGroup.addActor(actor);
-                }
-                cursorX += set.tileIds.size() * tileW + setMargin * 2;
-            } else {
-                cursorX += setMargin * 2;
+                TileActor actor = TileActorFactory.create(dto, new TableTileStrategy());
+                actor.setPosition(cursorX + ti * tileW, tileY);
+                final int setIndex = si;
+                attachDropListener(actor, "TABLE", setIndex);
+                tableGroup.addActor(actor);
             }
+            cursorX += set.tileIds.size() * tileW + setMargin * 2;
         }
 
         // "New set" drop zone at the end
@@ -523,7 +557,7 @@ public class GameScreen extends BaseScreen {
                     // Dropped back onto rack
                     if ("TABLE".equals(sourceArea)) {
                         ReturnTileCommand cmd = new ReturnTileCommand(
--                                actor.getTileData().id, sourceSetIndex);
+                                actor.getTileData().id, sourceSetIndex);
                         commandHistory.execute(cmd);
                         refreshTileDisplay();
                     }
@@ -553,17 +587,16 @@ public class GameScreen extends BaseScreen {
     // -------------------------------------------------------------------------
 
     private TileDto findTileById(int id) {
-        // Search rack
+        // Fast O(1) lookup from tile cache (populated by gsm.loadFromServer)
+        TileDto cached = gsm.getTileById(id);
+        if (cached != null) return cached;
+
+        // Fallback: linear search in rack (covers tiles added locally before next server sync)
         for (TileDto t : gsm.getMyRackTiles()) {
             if (t.id == id) return t;
         }
-        // Search table sets
-        for (TableSetDto set : gsm.getTableSets()) {
-            if (set.tileIds == null) continue;
-            // We need the full TileDto — the server only gives us IDs in sets.
-            // We reconstruct a minimal DTO from the rack snapshot if available.
-        }
-        // Fallback: create a placeholder DTO
+
+        // Last resort: create a placeholder DTO so the display doesn't crash
         TileDto placeholder = new TileDto();
         placeholder.id = id;
         placeholder.color = "BLACK";
@@ -581,7 +614,7 @@ public class GameScreen extends BaseScreen {
 
         List<TableSetDto> sets = gsm.getTableSets();
         float setMargin = 12f;
-        float tileW     = (Constants.TILE_WIDTH * 0.9f) + 2f;
+        float tileW     = Constants.TILE_WIDTH * 0.85f + 2f;
         float cursorX   = setMargin;
 
         for (int si = 0; si < sets.size(); si++) {
@@ -597,6 +630,16 @@ public class GameScreen extends BaseScreen {
     }
 
     private void updateTurnLabel() {
+        String localUser = NetworkManager.getInstance().getCurrentUsername();
+
+        // Update opponent name label (left header) — first participant that isn't us
+        for (ParticipantDto p : gsm.getParticipants()) {
+            if (!p.username.equals(localUser)) {
+                opponentNameLabel.setText(p.username);
+                break;
+            }
+        }
+
         if (gsm.isMyTurn()) {
             turnLabel.setText("Giliran: KAMU");
             turnLabel.setColor(Color.GREEN);
@@ -650,12 +693,16 @@ public class GameScreen extends BaseScreen {
     @Override
     protected void onDispose() {
         if (tileFont != null) tileFont.dispose();
-        // Dispose tile actors
-        for (Actor a : rackGroup.getChildren()) {
-            if (a instanceof TileActor) ((TileActor) a).dispose();
+        // Dispose tile actors — guard against null groups (e.g. if buildUI() never completed)
+        if (rackGroup != null) {
+            for (Actor a : rackGroup.getChildren()) {
+                if (a instanceof TileActor) ((TileActor) a).dispose();
+            }
         }
-        for (Actor a : tableGroup.getChildren()) {
-            if (a instanceof TileActor) ((TileActor) a).dispose();
+        if (tableGroup != null) {
+            for (Actor a : tableGroup.getChildren()) {
+                if (a instanceof TileActor) ((TileActor) a).dispose();
+            }
         }
     }
 }

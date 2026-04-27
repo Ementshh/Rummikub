@@ -4,7 +4,9 @@ import com.rummikub.network.NetworkManager;
 import com.rummikub.network.dto.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * [SINGLETON] — Single source of truth for all local game state.
@@ -30,6 +32,9 @@ public class GameStateManager {
     private List<TileDto> myRackTiles = new ArrayList<>();
     private List<TableSetDto> tableSets = new ArrayList<>();
     private List<ParticipantDto> participants = new ArrayList<>();
+
+    // O(1) lookup cache: tile ID → TileDto (populated from myRackTiles on each server sync)
+    private Map<Integer, TileDto> tileCache = new HashMap<>();
 
     // -------------------------------------------------------------------------
     // Snapshot (taken at the start of each turn for undo/reset)
@@ -69,6 +74,12 @@ public class GameStateManager {
         this.myRackTiles = data.myRackTiles != null ? new ArrayList<>(data.myRackTiles) : new ArrayList<>();
         this.tableSets = data.tableSets != null ? new ArrayList<>(data.tableSets) : new ArrayList<>();
         this.participants = data.participants != null ? new ArrayList<>(data.participants) : new ArrayList<>();
+
+        // Rebuild tile cache for O(1) lookup by ID
+        tileCache.clear();
+        for (TileDto t : this.myRackTiles) {
+            tileCache.put(t.id, t);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -148,6 +159,16 @@ public class GameStateManager {
 
     public List<ParticipantDto> getParticipants() { return participants; }
     public void setParticipants(List<ParticipantDto> participants) { this.participants = participants; }
+
+    /**
+     * O(1) lookup of a TileDto by its ID from the tile cache.
+     * The cache is populated from myRackTiles on each call to loadFromServer().
+     *
+     * @return the TileDto for the given id, or null if not found in cache
+     */
+    public TileDto getTileById(int id) {
+        return tileCache.get(id);
+    }
 
     // -------------------------------------------------------------------------
     // Deep copy helpers
