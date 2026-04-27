@@ -271,13 +271,15 @@ public class GameScreen extends BaseScreen {
 
     /** Transitions to a new state, calling exit() on the old and enter() on the new. */
     public void transitionTo(GameScreenState newState) {
+        if (newState == null) {
+            Gdx.app.log("GameScreen", "transitionTo: newState is null, ignoring transition");
+            return;
+        }
         if (currentState != null) {
             currentState.exit(this);
         }
         currentState = newState;
-        if (currentState != null) {
-            currentState.enter(this);
-        }
+        currentState.enter(this);
     }
 
     // -------------------------------------------------------------------------
