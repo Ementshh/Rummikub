@@ -196,8 +196,8 @@ public class GameService {
             for (GameTile gt : rackTiles) {
                 rackDtos.add(Map.of(
                     "id", gt.getTile().getId(),
-                    "number", gt.getTile().getNumber(),
-                    "color", gt.getTile().getColor().toString(),
+                    "number", gt.getTile().getNumber() != null ? gt.getTile().getNumber() : 0,
+                    "color", gt.getTile().getColor() != null ? gt.getTile().getColor().toString() : "NONE",
                     "isJoker", gt.getTile().isJoker()
                 ));
             }
