@@ -1,6 +1,7 @@
 package com.rummikub.network;
 
 import com.rummikub.network.dto.*;
+import java.util.List;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +95,40 @@ public class GameApiFacade {
      * The request must contain the full table state and remaining rack tiles.
      */
     public void endTurn(String gameId, EndTurnRequest req, ApiCallback<EndTurnResponse> cb) {
-        net.post("/api/games/" + gameId + "/end-turn", req, EndTurnResponse.class, cb);
+        // Manually build JSON to guarantee quoted keys (LibGDX Json emits unquoted keys
+        // which Spring/Jackson rejects with 400). Backend expects snake_case field names.
+        String json = endTurnToJson(req);
+        net.postRaw("/api/games/" + gameId + "/end-turn", json, EndTurnResponse.class, cb);
+    }
+
+    /** Manually serializes EndTurnRequest to a spec-compliant JSON string. */
+    private String endTurnToJson(EndTurnRequest req) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"table_sets\":[");
+        if (req.table_sets != null) {
+            for (int i = 0; i < req.table_sets.size(); i++) {
+                if (i > 0) sb.append(",");
+                var set = req.table_sets.get(i);
+                sb.append("{\"set_type\":\"").append(set.set_type).append("\",");
+                sb.append("\"tile_ids\":[");
+                if (set.tileIds != null) {
+                    for (int j = 0; j < set.tileIds.size(); j++) {
+                        if (j > 0) sb.append(",");
+                        sb.append(set.tileIds.get(j));
+                    }
+                }
+                sb.append("]}");
+            }
+        }
+        sb.append("],\"rack_tiles\":[");
+        if (req.rack_tiles != null) {
+            for (int i = 0; i < req.rack_tiles.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(req.rack_tiles.get(i));
+            }
+        }
+        sb.append("]}");
+        return sb.toString();
     }
 
     // -------------------------------------------------------------------------

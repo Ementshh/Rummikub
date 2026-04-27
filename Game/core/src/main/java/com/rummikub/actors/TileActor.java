@@ -104,10 +104,12 @@ public class TileActor extends Actor {
         float w = getWidth();
         float h = getHeight();
 
-        // ShapeRenderer requires the SpriteBatch to be inactive
+        // KRITIS: Akhiri batch dulu sebelum ShapeRenderer
         batch.end();
 
+        // Sinkronkan projection dan transform matrix agar koordinat SR sama dengan Batch
         shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+        shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
 
         // --- Filled background ---
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -124,9 +126,13 @@ public class TileActor extends Actor {
         batch.begin();
 
         // --- Text label ---
+        // Gunakan x, y yang sama (lokal terhadap parent group)
         font.getData().setScale(strategy.getFontScale());
         font.setColor(textColor);
-        font.draw(batch, label, x + w * 0.15f, y + h * 0.65f);
+        font.draw(batch, label, x + w * 0.18f, y + h * 0.68f);
+        
+        // Reset scale agar tidak mengganggu render lain
+        font.getData().setScale(1f);
     }
 
     // -------------------------------------------------------------------------

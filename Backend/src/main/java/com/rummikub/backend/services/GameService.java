@@ -183,6 +183,9 @@ public class GameService {
         data.put("id", game.getId().toString());
         data.put("status", game.getStatus().toString());
         data.put("currentTurnUserId", game.getCurrentTurnParticipant() != null ? game.getCurrentTurnParticipant().getUser().getId().toString() : null);
+        data.put("turnStartedAt", game.getTurnStartedAt() != null 
+            ? game.getTurnStartedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() 
+            : null);
         data.put("participants", participantDtos);
         data.put("winner", null); 
 
@@ -217,7 +220,7 @@ public class GameService {
         List<Map<String, Object>> tableSetDtos = new ArrayList<>();
         for (TableSet ts : sets) {
             tableSetDtos.add(Map.of(
-                "setType", ts.getSetType().toString(),
+                "set_type", ts.getSetType().toString(),
                 "tileIds", tilesBySet.getOrDefault(ts.getId(), new ArrayList<>())
             ));
         }

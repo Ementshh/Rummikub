@@ -327,6 +327,12 @@ public class GameScreen extends BaseScreen {
                 }
 
                 gsm.loadFromServer(r.data);
+                
+                // BUG 2 DEBUG
+                Gdx.app.log("DEBUG_TURN", "currentTurnUserId dari server: " + r.data.currentTurnUserId);
+                Gdx.app.log("DEBUG_TURN", "userId kita (NetworkManager): " + NetworkManager.getInstance().getUserId());
+                Gdx.app.log("DEBUG_TURN", "isMyTurn() result: " + gsm.isMyTurn());
+
                 refreshTileDisplay();
                 updateStatusLabel();
 
@@ -409,7 +415,18 @@ public class GameScreen extends BaseScreen {
     }
 
     private void onEndTurnClicked() {
+        // Validasi minimal 3 tile per set
+        List<TableSetDto> sets = gsm.getTableSets();
+        for (int i = 0; i < sets.size(); i++) {
+            if (sets.get(i).tileIds.size() < 3) {
+                Gdx.app.log("GameScreen", "Set #" + (i + 1) + " belum lengkap (min 3 tile)!");
+                statusLabel.setText("Set #" + (i + 1) + " harus memiliki minimal 3 ubin!");
+                return;
+            }
+        }
+
         EndTurnRequest req = gsm.buildEndTurnRequest();
+        Gdx.app.log("GameScreen", "Sending end-turn: " + req.table_sets.size() + " sets, " + req.rack_tiles.size() + " rack tiles");
         transitionTo(new SubmittingState());
 
         facade.endTurn(gameId, req, new ApiCallback<EndTurnResponse>() {
@@ -421,11 +438,29 @@ public class GameScreen extends BaseScreen {
                         gsm.setWinnerUsername(r.data.winner);
                         transitionTo(new GameOverState());
                     } else {
-                        pollGameState();
-                        transitionTo(new WaitingTurnState());
+                        // Poll to get the LATEST server state (which player's turn it is now)
+                        // Only THEN decide which state to transition to
+                        facade.getGameState(gameId, new ApiCallback<GameStateResponse>() {
+                            @Override
+                            public void onSuccess(GameStateResponse gs) {
+                                if (gs != null && gs.success && gs.data != null) {
+                                    gsm.loadFromServer(gs.data);
+                                    refreshTileDisplay();
+                                }
+                                // After state is updated, go to waiting (poll loop will switch to MyTurnState if needed)
+                                transitionTo(new WaitingTurnState());
+                            }
+
+                            @Override
+                            public void onFailure(String err) {
+                                Gdx.app.log("GameScreen", "Post-endturn poll failed: " + err);
+                                transitionTo(new WaitingTurnState());
+                            }
+                        });
                     }
                 } else {
                     Gdx.app.log("GameScreen", "End-turn rejected: " + r.error);
+                    statusLabel.setText("Ditolak: " + (r.error != null ? r.error : "Set tidak valid"));
                     transitionTo(new MyTurnState());
                 }
             }
@@ -433,6 +468,7 @@ public class GameScreen extends BaseScreen {
             @Override
             public void onFailure(String err) {
                 Gdx.app.log("GameScreen", "End-turn error: " + err);
+                statusLabel.setText("Error: " + err);
                 transitionTo(new MyTurnState());
             }
         });
@@ -500,9 +536,10 @@ public class GameScreen extends BaseScreen {
             }
 
             // Set type label above the tiles
-            Label setLabel = makeLabel(set.setType != null ? set.setType : "?");
+            String type = set.set_type != null ? set.set_type : "?";
+            Label setLabel = makeLabel(type);
             setLabel.setFontScale(0.7f);
-            setLabel.setColor(set.setType != null && set.setType.equals("RUN")
+            setLabel.setColor("RUN".equals(type)
                     ? new Color(0.4f, 0.7f, 1f, 1f)
                     : new Color(1f, 0.9f, 0.3f, 1f));
             setLabel.setPosition(cursorX, tileY + tileH + 4);
@@ -648,13 +685,13 @@ public class GameScreen extends BaseScreen {
         }
 
         if (gsm.isMyTurn()) {
-            turnInfoLabel.setText("Giliran: KAMU");
+            turnInfoLabel.setText("GILIRAN: KAMU");
             turnInfoLabel.setColor(Color.GREEN);
         } else {
             String currentId = gsm.getCurrentTurnUserId();
             String name = resolveUsername(currentId);
-            turnInfoLabel.setText("Giliran: " + name);
-            turnInfoLabel.setColor(Color.WHITE);
+            turnInfoLabel.setText("GILIRAN: " + name.toUpperCase());
+            turnInfoLabel.setColor(Color.LIGHT_GRAY);
         }
     }
 

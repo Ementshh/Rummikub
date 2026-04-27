@@ -18,6 +18,7 @@ public class GameStateResponse {
         public List<ParticipantDto> participants;
         public String winner;                       // username pemenang, null jika belum
         public boolean hasDoneInitialMeld;
+        public Long turnStartedAt;                  // Unix timestamp millis (null jika game belum mulai)
 
         public GameData() {}
     }

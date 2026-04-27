@@ -25,6 +25,7 @@ public class GameStateManager {
     // -------------------------------------------------------------------------
     private String gameId;
     private String currentTurnUserId;
+    private long turnStartedAt;
     private boolean hasDoneInitialMeld;
     private String winnerUsername;
 
@@ -74,6 +75,7 @@ public class GameStateManager {
         this.myRackTiles = data.myRackTiles != null ? new ArrayList<>(data.myRackTiles) : new ArrayList<>();
         this.tableSets = data.tableSets != null ? new ArrayList<>(data.tableSets) : new ArrayList<>();
         this.participants = data.participants != null ? new ArrayList<>(data.participants) : new ArrayList<>();
+        this.turnStartedAt = (data.turnStartedAt != null) ? data.turnStartedAt : 0L;
 
         // Rebuild tile cache for O(1) lookup by ID
         tileCache.clear();
@@ -113,7 +115,46 @@ public class GameStateManager {
      */
     public boolean isMyTurn() {
         String myId = NetworkManager.getInstance().getUserId();
-        return currentTurnUserId != null && currentTurnUserId.equals(myId);
+        if (myId == null || currentTurnUserId == null) return false;
+        return currentTurnUserId.trim().equalsIgnoreCase(myId.trim());
+    }
+
+    public String detectSetType(List<Integer> tileIds) {
+        if (tileIds == null || tileIds.size() < 2) return "RUN";
+
+        List<TileDto> tiles = new ArrayList<>();
+        for (Integer id : tileIds) {
+            TileDto t = getTileById(id);
+            if (t != null && !t.isJoker) {
+                tiles.add(t);
+            }
+        }
+
+        if (tiles.isEmpty()) return "RUN";
+
+        // Cek apakah semua angka sama -> GROUP
+        int firstNumber = tiles.get(0).number;
+        boolean allSameNumber = true;
+        for (TileDto t : tiles) {
+            if (t.number != firstNumber) {
+                allSameNumber = false;
+                break;
+            }
+        }
+        if (allSameNumber) return "GROUP";
+
+        // Cek apakah semua warna sama -> RUN
+        String firstColor = tiles.get(0).color;
+        boolean allSameColor = true;
+        for (TileDto t : tiles) {
+            if (t.color == null || !t.color.equals(firstColor)) {
+                allSameColor = false;
+                break;
+            }
+        }
+        if (allSameColor) return "RUN";
+
+        return "RUN";
     }
 
     /**
@@ -128,7 +169,9 @@ public class GameStateManager {
 
         List<TableSetDto> sets = new ArrayList<>();
         for (TableSetDto src : tableSets) {
-            TableSetDto copy = new TableSetDto(src.setType, new ArrayList<>(src.tileIds));
+            // BUG 3&4 Fix: Auto-detect set type before submitting
+            String actualType = detectSetType(src.tileIds);
+            TableSetDto copy = new TableSetDto(actualType, new ArrayList<>(src.tileIds));
             sets.add(copy);
         }
 
@@ -143,6 +186,12 @@ public class GameStateManager {
     public void setGameId(String gameId) { this.gameId = gameId; }
 
     public String getCurrentTurnUserId() { return currentTurnUserId; }
+
+    public int getRemainingSeconds() {
+        if (turnStartedAt <= 0) return 120;
+        long elapsed = (System.currentTimeMillis() - turnStartedAt) / 1000;
+        return (int) Math.max(0, 120 - elapsed);
+    }
     public void setCurrentTurnUserId(String id) { this.currentTurnUserId = id; }
 
     public boolean isHasDoneInitialMeld() { return hasDoneInitialMeld; }
@@ -175,6 +224,7 @@ public class GameStateManager {
     // -------------------------------------------------------------------------
 
     private List<TileDto> deepCopyRack(List<TileDto> source) {
+        if (source == null) return new ArrayList<>();
         List<TileDto> copy = new ArrayList<>();
         for (TileDto t : source) {
             copy.add(new TileDto(t.id, t.color, t.number, t.isJoker));
@@ -183,9 +233,11 @@ public class GameStateManager {
     }
 
     private List<TableSetDto> deepCopyTable(List<TableSetDto> source) {
+        if (source == null) return new ArrayList<>();
         List<TableSetDto> copy = new ArrayList<>();
         for (TableSetDto s : source) {
-            copy.add(new TableSetDto(s.setType, new ArrayList<>(s.tileIds)));
+            // BUG 3&4 Fix: Use set_type instead of setType
+            copy.add(new TableSetDto(s.set_type, new ArrayList<>(s.tileIds)));
         }
         return copy;
     }

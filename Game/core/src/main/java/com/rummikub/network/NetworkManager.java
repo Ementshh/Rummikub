@@ -124,6 +124,15 @@ public class NetworkManager {
      * Body is serialized to JSON via LibGDX Json. Pass {@code null} for an empty body.
      */
     public <T> void post(String endpoint, Object body, Class<T> responseType, ApiCallback<T> cb) {
+        String bodyJson = (body != null) ? toStandardJson(body) : "{}";
+        postRaw(endpoint, bodyJson, responseType, cb);
+    }
+
+    /**
+     * Performs an HTTP POST with a pre-built JSON string body.
+     * Use this when manual JSON construction is needed (e.g., to guarantee quoted keys).
+     */
+    public <T> void postRaw(String endpoint, String bodyJson, Class<T> responseType, ApiCallback<T> cb) {
         new Thread(() -> {
             try {
                 URL url = new URL(Constants.BASE_URL + endpoint);
@@ -138,7 +147,6 @@ public class NetworkManager {
                 conn.setConnectTimeout(10_000);
                 conn.setReadTimeout(15_000);
 
-                String bodyJson = (body != null) ? toStandardJson(body) : "{}";
                 conn.getOutputStream().write(bodyJson.getBytes(StandardCharsets.UTF_8));
 
                 int status = conn.getResponseCode();
@@ -149,7 +157,6 @@ public class NetworkManager {
 
                 Gdx.app.log("NetworkManager", "POST " + endpoint + " -> HTTP " + status + " | body: " + resp);
 
-                // If the server returned a 2xx with no body, synthesise {"success":true}
                 if (resp.isBlank()) {
                     resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
                 }

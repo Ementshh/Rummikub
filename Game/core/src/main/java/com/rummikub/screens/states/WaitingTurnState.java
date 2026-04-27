@@ -20,6 +20,10 @@ public class WaitingTurnState implements GameScreenState {
 
     @Override
     public void update(GameScreen screen, float delta) {
+        // BUG 6 Fix: Tampilkan timer yang disinkronkan dari server
+        int remaining = com.rummikub.state.GameStateManager.getInstance().getRemainingSeconds();
+        screen.updateTimerDisplay(remaining);
+
         pollTimer += delta;
         if (pollTimer >= 2f) {
             pollTimer = 0f;
