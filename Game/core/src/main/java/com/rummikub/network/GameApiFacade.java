@@ -98,6 +98,7 @@ public class GameApiFacade {
         // Manually build JSON to guarantee quoted keys (LibGDX Json emits unquoted keys
         // which Spring/Jackson rejects with 400). Backend expects snake_case field names.
         String json = endTurnToJson(req);
+        com.badlogic.gdx.Gdx.app.log("GameApiFacade", "END-TURN JSON payload: " + json);
         net.postRaw("/api/games/" + gameId + "/end-turn", json, EndTurnResponse.class, cb);
     }
 

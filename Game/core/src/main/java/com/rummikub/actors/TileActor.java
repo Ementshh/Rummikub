@@ -88,7 +88,11 @@ public class TileActor extends Actor {
             public void dragStop(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                  float x, float y, int pointer) {
                 dragging = false;
-                fire(new TileDropEvent(TileActor.this, getX(), getY()));
+                // Convert local position to STAGE coordinates so drop detection
+                // can compare against screen-space constants (RACK_Y, TABLE_Y, etc.)
+                com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(getX(), getY());
+                localToStageCoordinates(stagePos);
+                fire(new TileDropEvent(TileActor.this, stagePos.x, stagePos.y));
             }
         });
     }

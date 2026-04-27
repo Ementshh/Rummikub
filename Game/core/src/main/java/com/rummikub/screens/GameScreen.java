@@ -594,11 +594,18 @@ public class GameScreen extends BaseScreen {
                 float dropX = drop.dropX;
                 float dropY = drop.dropY;
 
+                Gdx.app.log("DROP_DEBUG", "Tile " + actor.getTileData().id
+                    + " from=" + sourceArea
+                    + " dropX=" + dropX + " dropY=" + dropY
+                    + " RACK=[" + RACK_Y + "," + (RACK_Y + RACK_H) + "]"
+                    + " TABLE=[" + TABLE_Y + "," + (TABLE_Y + TABLE_H) + "]");
+
                 // Determine drop target
                 int targetSetIndex = findSetIndexAtPosition(dropX, dropY);
 
                 if (dropY >= RACK_Y && dropY < RACK_Y + RACK_H) {
                     // Dropped back onto rack
+                    Gdx.app.log("DROP_DEBUG", "-> matched RACK area");
                     if ("TABLE".equals(sourceArea)) {
                         ReturnTileCommand cmd = new ReturnTileCommand(
                                 actor.getTileData().id, sourceSetIndex);
@@ -607,6 +614,7 @@ public class GameScreen extends BaseScreen {
                     }
                 } else if (dropY >= TABLE_Y && dropY < TABLE_Y + TABLE_H) {
                     // Dropped onto table area
+                    Gdx.app.log("DROP_DEBUG", "-> matched TABLE area, targetSetIdx=" + targetSetIndex);
                     if ("RACK".equals(sourceArea)) {
                         boolean isNewSet = (targetSetIndex == -1);
                         PlaceTileCommand cmd = new PlaceTileCommand(
@@ -620,6 +628,8 @@ public class GameScreen extends BaseScreen {
                         commandHistory.execute(cmd);
                         refreshTileDisplay();
                     }
+                } else {
+                    Gdx.app.log("DROP_DEBUG", "-> NO MATCH (dropY outside rack/table)");
                 }
                 return true;
             }
