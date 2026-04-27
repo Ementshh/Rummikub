@@ -232,6 +232,16 @@ public class GameScreen extends BaseScreen {
         nameLabel.setPosition(10, RACK_Y + RACK_H - 18);
         stage.addActor(nameLabel);
 
+        // Rack Background (Dark Brown)
+        Image rackBg = new Image(makeColorDrawable(new Color(0.35f, 0.22f, 0.10f, 1f)));
+        rackBg.setBounds(0, 0, Constants.SCREEN_WIDTH, RACK_H + RACK_Y);
+        stage.addActor(rackBg);
+
+        // Rack Border (Light Brown)
+        Image rackBorder = new Image(makeColorDrawable(new Color(0.55f, 0.38f, 0.18f, 1f)));
+        rackBorder.setBounds(0, RACK_Y + RACK_H - 2, Constants.SCREEN_WIDTH, 3);
+        stage.addActor(rackBorder);
+
         // Group for tile actors
         rackGroup = new Group();
         rackGroup.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
@@ -701,17 +711,5 @@ public class GameScreen extends BaseScreen {
                 if (a instanceof TileActor) ((TileActor) a).dispose();
             }
         }
-    }
-
-    @Override
-    protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
-        // Gambar background rack area (kotak coklat tua)
-        sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(0.35f, 0.22f, 0.10f, 1f);
-        sr.rect(0, 0, 1280, 100);
-        // Border atas rack
-        sr.setColor(0.55f, 0.38f, 0.18f, 1f);
-        sr.rect(0, 98, 1280, 3);
-        sr.end();
     }
 }
