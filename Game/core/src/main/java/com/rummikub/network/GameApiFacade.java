@@ -112,10 +112,10 @@ public class GameApiFacade {
                 var set = req.table_sets.get(i);
                 sb.append("{\"set_type\":\"").append(set.set_type).append("\",");
                 sb.append("\"tile_ids\":[");
-                if (set.tileIds != null) {
-                    for (int j = 0; j < set.tileIds.size(); j++) {
+                if (set.tile_ids != null) {
+                    for (int j = 0; j < set.tile_ids.size(); j++) {
                         if (j > 0) sb.append(",");
-                        sb.append(set.tileIds.get(j));
+                        sb.append(set.tile_ids.get(j));
                     }
                 }
                 sb.append("]}");

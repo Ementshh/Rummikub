@@ -30,18 +30,23 @@ public class MoveWithinTableCommand implements TileCommand {
         List<TableSetDto> sets = gsm.getTableSets();
         TableSetDto source = sets.get(sourceSetIndex);
 
-        if (!source.tileIds.remove(Integer.valueOf(tileId))) return;  // tile not found
+        if (!source.tile_ids.remove(Integer.valueOf(tileId))) return;  // tile not found
 
-        sourceSetRemoved = source.tileIds.isEmpty();
+        sourceSetRemoved = source.tile_ids.isEmpty();
         if (sourceSetRemoved) {
             sets.remove(sourceSetIndex);
             // If source was before target, the target index shifts down by one
             int adjustedTarget = targetSetIndex > sourceSetIndex
                     ? targetSetIndex - 1
                     : targetSetIndex;
-            sets.get(adjustedTarget).tileIds.add(tileId);
+            TableSetDto target = sets.get(adjustedTarget);
+            target.tile_ids.add(tileId);
+            target.set_type = gsm.detectSetType(target.tile_ids);
         } else {
-            sets.get(targetSetIndex).tileIds.add(tileId);
+            source.set_type = gsm.detectSetType(source.tile_ids);
+            TableSetDto target = sets.get(targetSetIndex);
+            target.tile_ids.add(tileId);
+            target.set_type = gsm.detectSetType(target.tile_ids);
         }
     }
 
@@ -55,15 +60,23 @@ public class MoveWithinTableCommand implements TileCommand {
                 : targetSetIndex;
 
         TableSetDto target = sets.get(currentTarget);
-        target.tileIds.remove(Integer.valueOf(tileId));
+        target.tile_ids.remove(Integer.valueOf(tileId));
+        if (!target.tile_ids.isEmpty()) {
+            target.set_type = gsm.detectSetType(target.tile_ids);
+        } else {
+            sets.remove(currentTarget);
+        }
 
         if (sourceSetRemoved) {
             // Recreate the source set with just this tile
             TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
-            restored.tileIds.add(tileId);
+            restored.tile_ids.add(tileId);
+            restored.set_type = gsm.detectSetType(restored.tile_ids);
             sets.add(sourceSetIndex, restored);
         } else {
-            sets.get(sourceSetIndex).tileIds.add(tileId);
+            TableSetDto src = sets.get(sourceSetIndex);
+            src.tile_ids.add(tileId);
+            src.set_type = gsm.detectSetType(src.tile_ids);
         }
 
         sourceSetRemoved = false;

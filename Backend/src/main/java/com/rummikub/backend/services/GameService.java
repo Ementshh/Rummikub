@@ -219,13 +219,36 @@ public class GameService {
 
         List<Map<String, Object>> tableSetDtos = new ArrayList<>();
         for (TableSet ts : sets) {
-            tableSetDtos.add(Map.of(
-                "set_type", ts.getSetType().toString(),
-                "tileIds", tilesBySet.getOrDefault(ts.getId(), new ArrayList<>())
-            ));
+            List<Integer> setTileIds = tilesBySet.getOrDefault(ts.getId(), new ArrayList<>());
+            Map<String, Object> setDto = new HashMap<>();
+            setDto.put("set_type", ts.getSetType().toString());
+            setDto.put("tile_ids", setTileIds);
+            setDto.put("tiles", buildTileDetails(setTileIds));
+            tableSetDtos.add(setDto);
         }
         data.put("tableSets", tableSetDtos);
 
         return data;
+    }
+
+    /**
+     * Builds a list of tile detail maps for the given tile IDs.
+     * This allows the frontend to cache tile metadata (color, number, isJoker)
+     * for set type detection without a separate API call.
+     */
+    private List<Map<String, Object>> buildTileDetails(List<Integer> tileIds) {
+        List<Map<String, Object>> details = new ArrayList<>();
+        for (Integer tileId : tileIds) {
+            Tile tile = rummikubLogicService.getTile(tileId);
+            if (tile != null) {
+                details.add(Map.of(
+                    "id", tile.getId(),
+                    "number", tile.getNumber() != null ? tile.getNumber() : 0,
+                    "color", tile.getColor() != null ? tile.getColor().toString() : "NONE",
+                    "isJoker", tile.isJoker()
+                ));
+            }
+        }
+        return details;
     }
 }

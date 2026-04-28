@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * [SINGLETON] — Single source of truth for all local game state.
@@ -78,9 +79,21 @@ public class GameStateManager {
         this.turnStartedAt = (data.turnStartedAt != null) ? data.turnStartedAt : 0L;
 
         // Rebuild tile cache for O(1) lookup by ID
+        if (tileCache == null) tileCache = new HashMap<>();
         tileCache.clear();
+        
+        // Cache rack tiles
         for (TileDto t : this.myRackTiles) {
             tileCache.put(t.id, t);
+        }
+        
+        // Cache table tiles (if server provided them in TableSetDto.tiles)
+        for (TableSetDto set : this.tableSets) {
+            if (set.tiles != null) {
+                for (TileDto t : set.tiles) {
+                    tileCache.put(t.id, t);
+                }
+            }
         }
     }
 
@@ -119,41 +132,29 @@ public class GameStateManager {
         return currentTurnUserId.trim().equalsIgnoreCase(myId.trim());
     }
 
-    public String detectSetType(List<Integer> tileIds) {
-        if (tileIds == null || tileIds.size() < 2) return "RUN";
+    public String detectSetType(List<Integer> tile_ids) {
+        if (tile_ids == null || tile_ids.size() < 2) return "RUN";
 
-        List<TileDto> tiles = new ArrayList<>();
-        for (Integer id : tileIds) {
-            TileDto t = getTileById(id);
-            if (t != null && !t.isJoker) {
-                tiles.add(t);
-            }
-        }
+        // Kumpulkan tile non-joker saja untuk pengecekan
+        List<TileDto> nonJokers = tile_ids.stream()
+            .map(id -> getTileById(id))
+            .filter(t -> t != null && !t.isJoker)
+            .collect(Collectors.toList());
 
-        if (tiles.isEmpty()) return "RUN";
+        // Jika semua tile adalah joker, default ke RUN
+        if (nonJokers.isEmpty()) return "RUN";
 
-        // Cek apakah semua angka sama -> GROUP
-        int firstNumber = tiles.get(0).number;
-        boolean allSameNumber = true;
-        for (TileDto t : tiles) {
-            if (t.number != firstNumber) {
-                allSameNumber = false;
-                break;
-            }
-        }
+        // Cek GROUP: semua angka sama?
+        int firstNumber = nonJokers.get(0).number;
+        boolean allSameNumber = nonJokers.stream().allMatch(t -> t.number == firstNumber);
         if (allSameNumber) return "GROUP";
 
-        // Cek apakah semua warna sama -> RUN
-        String firstColor = tiles.get(0).color;
-        boolean allSameColor = true;
-        for (TileDto t : tiles) {
-            if (t.color == null || !t.color.equals(firstColor)) {
-                allSameColor = false;
-                break;
-            }
-        }
+        // Cek RUN: semua warna sama?
+        String firstColor = nonJokers.get(0).color;
+        boolean allSameColor = nonJokers.stream().allMatch(t -> t.color != null && t.color.equals(firstColor));
         if (allSameColor) return "RUN";
 
+        // Campuran angka berbeda dan warna berbeda — tidak valid, tapi biarkan server yang tolak
         return "RUN";
     }
 
@@ -162,20 +163,64 @@ public class GameStateManager {
      * This is what gets sent to POST /api/games/{id}/end-turn.
      */
     public EndTurnRequest buildEndTurnRequest() {
-        List<Integer> rackIds = new ArrayList<>();
+        EndTurnRequest req = new EndTurnRequest();
+        req.table_sets = new ArrayList<>();
+        
+        for (TableSetDto set : tableSets) {
+            // Buat objek baru yang bersih untuk dikirim ke server
+            TableSetDto payload = new TableSetDto();
+            payload.set_type = detectSetType(set.tile_ids); // Auto-detect before sending
+            payload.tile_ids = new ArrayList<>(set.tile_ids);
+            
+            // Validasi: jangan kirim set kosong
+            if (payload.tile_ids.isEmpty()) continue;
+            
+            // Auto-sort tile_ids based on set type so backend validates correct order
+            sortTileIds(payload);
+            
+            req.table_sets.add(payload);
+            
+            com.badlogic.gdx.Gdx.app.log("END_TURN_REQ", 
+                "set_type=" + payload.set_type + " tile_ids=" + payload.tile_ids);
+        }
+        
+        req.rack_tiles = new ArrayList<>();
         for (TileDto tile : myRackTiles) {
-            rackIds.add(tile.id);
+            req.rack_tiles.add(tile.id);
         }
 
-        List<TableSetDto> sets = new ArrayList<>();
-        for (TableSetDto src : tableSets) {
-            // BUG 3&4 Fix: Auto-detect set type before submitting
-            String actualType = detectSetType(src.tileIds);
-            TableSetDto copy = new TableSetDto(actualType, new ArrayList<>(src.tileIds));
-            sets.add(copy);
-        }
+        com.badlogic.gdx.Gdx.app.log("END_TURN_REQ", "rack_tiles=" + req.rack_tiles);
+        return req;
+    }
 
-        return new EndTurnRequest(sets, rackIds);
+    /**
+     * Sorts tile_ids in the payload based on the set type:
+     * - RUN: sort by tile number (ascending) for sequential validation
+     * - GROUP: sort by color name for consistency
+     * Jokers are placed at the end.
+     */
+    private void sortTileIds(TableSetDto payload) {
+        if (payload.tile_ids == null || payload.tile_ids.size() < 2) return;
+        
+        payload.tile_ids.sort((idA, idB) -> {
+            TileDto a = getTileById(idA);
+            TileDto b = getTileById(idB);
+            if (a == null || b == null) return 0;
+            
+            // Jokers go to the end
+            if (a.isJoker && !b.isJoker) return 1;
+            if (!a.isJoker && b.isJoker) return -1;
+            if (a.isJoker && b.isJoker) return 0;
+            
+            if ("RUN".equals(payload.set_type)) {
+                return Integer.compare(a.number, b.number);
+            } else {
+                // GROUP: sort by color for consistency
+                return (a.color != null && b.color != null) 
+                    ? a.color.compareTo(b.color) 
+                    : 0;
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -236,8 +281,12 @@ public class GameStateManager {
         if (source == null) return new ArrayList<>();
         List<TableSetDto> copy = new ArrayList<>();
         for (TableSetDto s : source) {
-            // BUG 3&4 Fix: Use set_type instead of setType
-            copy.add(new TableSetDto(s.set_type, new ArrayList<>(s.tileIds)));
+            TableSetDto newSet = new TableSetDto(s.set_type, new ArrayList<>(s.tile_ids));
+            // Also copy tiles cache list if present
+            if (s.tiles != null) {
+                newSet.tiles = new ArrayList<>(s.tiles);
+            }
+            copy.add(newSet);
         }
         return copy;
     }

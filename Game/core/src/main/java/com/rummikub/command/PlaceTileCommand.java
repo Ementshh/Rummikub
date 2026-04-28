@@ -53,10 +53,13 @@ public class PlaceTileCommand implements TileCommand {
 
         if (toNewSet) {
             TableSetDto newSet = new TableSetDto(setType, new ArrayList<>());
-            newSet.tileIds.add(tileId);
+            newSet.tile_ids.add(tileId);
+            newSet.set_type = gsm.detectSetType(newSet.tile_ids);
             sets.add(newSet);
         } else {
-            sets.get(targetSetIndex).tileIds.add(tileId);
+            TableSetDto target = sets.get(targetSetIndex);
+            target.tile_ids.add(tileId);
+            target.set_type = gsm.detectSetType(target.tile_ids);
         }
     }
 
@@ -70,16 +73,18 @@ public class PlaceTileCommand implements TileCommand {
             // The new set was appended last — find and remove it
             for (int i = sets.size() - 1; i >= 0; i--) {
                 TableSetDto s = sets.get(i);
-                if (s.tileIds.size() == 1 && s.tileIds.get(0) == tileId) {
+                if (s.tile_ids.size() == 1 && s.tile_ids.get(0) == tileId) {
                     sets.remove(i);
                     break;
                 }
             }
         } else {
             TableSetDto target = sets.get(targetSetIndex);
-            target.tileIds.remove(Integer.valueOf(tileId));
-            if (target.tileIds.isEmpty()) {
+            target.tile_ids.remove(Integer.valueOf(tileId));
+            if (target.tile_ids.isEmpty()) {
                 sets.remove(targetSetIndex);
+            } else {
+                target.set_type = gsm.detectSetType(target.tile_ids);
             }
         }
 

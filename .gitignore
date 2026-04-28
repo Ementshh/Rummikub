@@ -52,3 +52,5 @@ Game/.gradle/w
 *.bin
 *.jar
 *.jar
+*.class
+*.class

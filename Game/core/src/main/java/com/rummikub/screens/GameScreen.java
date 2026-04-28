@@ -32,6 +32,9 @@ import com.rummikub.utils.Constants;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.math.Rectangle;
+
 /**
  * Main game screen.
  *
@@ -94,6 +97,22 @@ public class GameScreen extends BaseScreen {
     private BitmapFont tileFont;
 
     // -------------------------------------------------------------------------
+    // Bounding box highlight system
+    // -------------------------------------------------------------------------
+
+    /** ShapeRenderer for drawing bounding box highlights. */
+    private ShapeRenderer bbRenderer;
+
+    /** Index of set currently being hovered during drag. -1 = none. */
+    private int highlightedSetIndex = -1;
+
+    /** Cached bounding boxes for each set (in tableGroup local coords). */
+    private final List<Rectangle> setBoundingBoxes = new ArrayList<>();
+
+    /** Padding around tiles to form the bounding box. */
+    private static final float BB_PADDING = 10f;
+
+    // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
 
@@ -112,6 +131,7 @@ public class GameScreen extends BaseScreen {
     @Override
     protected void buildUI() {
         tileFont = new BitmapFont();
+        bbRenderer = new ShapeRenderer();
 
         buildHeader();
         buildTableArea();
@@ -418,7 +438,7 @@ public class GameScreen extends BaseScreen {
         // Validasi minimal 3 tile per set
         List<TableSetDto> sets = gsm.getTableSets();
         for (int i = 0; i < sets.size(); i++) {
-            if (sets.get(i).tileIds.size() < 3) {
+            if (sets.get(i).tile_ids.size() < 3) {
                 Gdx.app.log("GameScreen", "Set #" + (i + 1) + " belum lengkap (min 3 tile)!");
                 statusLabel.setText("Set #" + (i + 1) + " harus memiliki minimal 3 ubin!");
                 return;
@@ -507,6 +527,7 @@ public class GameScreen extends BaseScreen {
             TileActor actor = TileActorFactory.create(dto, new RackTileStrategy());
             actor.setPosition(startX + i * tileW, tileY);
             attachDropListener(actor, "RACK", -1);
+            attachDragMoveListener(actor);
             rackGroup.addActor(actor);
         }
     }
@@ -518,6 +539,8 @@ public class GameScreen extends BaseScreen {
             if (a instanceof TileActor) ((TileActor) a).dispose();
         }
         tableGroup.clearChildren();
+        setBoundingBoxes.clear();
+        highlightedSetIndex = -1;
 
         List<TableSetDto> sets = gsm.getTableSets();
         float setMargin = 12f;
@@ -529,25 +552,56 @@ public class GameScreen extends BaseScreen {
         for (int si = 0; si < sets.size(); si++) {
             TableSetDto set = sets.get(si);
 
-            if (set.tileIds == null) {
-                Gdx.app.log("GameScreen", "rebuildTableDisplay: set " + si + " has null tileIds, skipping");
+            if (set.tile_ids == null || set.tile_ids.isEmpty()) {
+                Gdx.app.log("GameScreen", "rebuildTableDisplay: set " + si + " is empty, skipping");
                 cursorX += setMargin * 2;
+                setBoundingBoxes.add(new Rectangle(0, 0, 0, 0)); // placeholder
                 continue;
             }
 
-            // Set type label above the tiles
-            String type = set.set_type != null ? set.set_type : "?";
-            Label setLabel = makeLabel(type);
-            setLabel.setFontScale(0.7f);
-            setLabel.setColor("RUN".equals(type)
-                    ? new Color(0.4f, 0.7f, 1f, 1f)
-                    : new Color(1f, 0.9f, 0.3f, 1f));
-            setLabel.setPosition(cursorX, tileY + tileH + 4);
+            int tileCount = set.tile_ids.size();
+            float setPixelW = tileCount * tileW;
+
+            // Compute bounding box for this set (in tableGroup local coords)
+            Rectangle bb = new Rectangle(
+                cursorX - BB_PADDING,
+                tileY - BB_PADDING,
+                setPixelW + BB_PADDING * 2,
+                tileH + BB_PADDING * 2
+            );
+            setBoundingBoxes.add(bb);
+
+            // Determine label text and color based on set contents
+            String labelText;
+            Color labelColor;
+            if (tileCount < 3) {
+                labelText = "INCOMPLETE (" + tileCount + ")";
+                labelColor = new Color(0.6f, 0.6f, 0.6f, 1f); // Grey
+            } else {
+                String detectedType = gsm.detectSetType(set.tile_ids);
+                set.set_type = detectedType; // Keep in sync
+                if ("GROUP".equals(detectedType)) {
+                    // Verify it's a valid group (unique colors)
+                    boolean valid = isValidGroupLocally(set.tile_ids);
+                    labelText = valid ? "GROUP \u2713" : "GROUP \u2717";
+                    labelColor = valid ? new Color(0.2f, 0.85f, 0.2f, 1f) : new Color(0.9f, 0.2f, 0.2f, 1f);
+                } else {
+                    // Check if it's a valid run (sequential)
+                    boolean valid = isValidRunLocally(set.tile_ids);
+                    labelText = valid ? "RUN \u2713" : "RUN \u2717";
+                    labelColor = valid ? new Color(0.2f, 0.85f, 0.2f, 1f) : new Color(0.9f, 0.2f, 0.2f, 1f);
+                }
+            }
+
+            Label setLabel = makeLabel(labelText);
+            setLabel.setFontScale(0.65f);
+            setLabel.setColor(labelColor);
+            setLabel.setPosition(cursorX, tileY + tileH + 6);
             tableGroup.addActor(setLabel);
 
-            // Tiles in this set
-            for (int ti = 0; ti < set.tileIds.size(); ti++) {
-                int tileId = set.tileIds.get(ti);
+            // Render tiles in this set
+            for (int ti = 0; ti < set.tile_ids.size(); ti++) {
+                int tileId = set.tile_ids.get(ti);
                 TileDto dto = findTileById(tileId);
                 if (dto == null) continue;
 
@@ -555,9 +609,10 @@ public class GameScreen extends BaseScreen {
                 actor.setPosition(cursorX + ti * tileW, tileY);
                 final int setIndex = si;
                 attachDropListener(actor, "TABLE", setIndex);
+                attachDragMoveListener(actor);
                 tableGroup.addActor(actor);
             }
-            cursorX += set.tileIds.size() * tileW + setMargin * 2;
+            cursorX += setPixelW + setMargin * 2;
         }
 
         // "New set" drop zone at the end
@@ -582,6 +637,10 @@ public class GameScreen extends BaseScreen {
     /**
      * Attaches a TileDropEvent listener to a TileActor that executes the
      * appropriate Command when the tile is dropped.
+     *
+     * Uses bounding box hit testing to determine which set (if any) the tile
+     * lands on. If the tile lands inside a set's bounding box, it joins that set.
+     * If it lands on the table but outside all bounding boxes, it creates a new set.
      */
     private void attachDropListener(TileActor actor, String sourceArea, int sourceSetIndex) {
         actor.addListener(new com.badlogic.gdx.scenes.scene2d.EventListener() {
@@ -594,18 +653,21 @@ public class GameScreen extends BaseScreen {
                 float dropX = drop.dropX;
                 float dropY = drop.dropY;
 
-                Gdx.app.log("DROP_DEBUG", "Tile " + actor.getTileData().id
-                    + " from=" + sourceArea
-                    + " dropX=" + dropX + " dropY=" + dropY
-                    + " RACK=[" + RACK_Y + "," + (RACK_Y + RACK_H) + "]"
-                    + " TABLE=[" + TABLE_Y + "," + (TABLE_Y + TABLE_H) + "]");
+                // Convert stage coords to tableGroup-local coords for bounding box test
+                float localDropX = dropX - tableScroll.getX();
+                float localDropY = dropY - TABLE_Y;
+                // Account for scroll offset
+                localDropX += tableScroll.getScrollX();
 
-                // Determine drop target
-                int targetSetIndex = findSetIndexAtPosition(dropX, dropY);
+                int targetSetIndex = findSetIndexAtBoundingBox(localDropX, localDropY);
+
+                Gdx.app.log("DROP", "Tile " + actor.getTileData().id
+                    + " src=" + sourceArea + " dropStage=(" + dropX + "," + dropY + ")"
+                    + " localDrop=(" + localDropX + "," + localDropY + ")"
+                    + " targetBB=" + targetSetIndex);
 
                 if (dropY >= RACK_Y && dropY < RACK_Y + RACK_H) {
                     // Dropped back onto rack
-                    Gdx.app.log("DROP_DEBUG", "-> matched RACK area");
                     if ("TABLE".equals(sourceArea)) {
                         ReturnTileCommand cmd = new ReturnTileCommand(
                                 actor.getTileData().id, sourceSetIndex);
@@ -614,26 +676,136 @@ public class GameScreen extends BaseScreen {
                     }
                 } else if (dropY >= TABLE_Y && dropY < TABLE_Y + TABLE_H) {
                     // Dropped onto table area
-                    Gdx.app.log("DROP_DEBUG", "-> matched TABLE area, targetSetIdx=" + targetSetIndex);
                     if ("RACK".equals(sourceArea)) {
-                        boolean isNewSet = (targetSetIndex == -1);
-                        PlaceTileCommand cmd = new PlaceTileCommand(
-                                actor.getTileData().id, isNewSet,
-                                isNewSet ? 0 : targetSetIndex, "RUN");
-                        commandHistory.execute(cmd);
+                        if (targetSetIndex >= 0) {
+                            // Join existing set
+                            PlaceTileCommand cmd = new PlaceTileCommand(
+                                    actor.getTileData().id, false,
+                                    targetSetIndex, "RUN");
+                            commandHistory.execute(cmd);
+                        } else {
+                            // Create new set
+                            PlaceTileCommand cmd = new PlaceTileCommand(
+                                    actor.getTileData().id, true,
+                                    0, "RUN");
+                            commandHistory.execute(cmd);
+                        }
                         refreshTileDisplay();
-                    } else if ("TABLE".equals(sourceArea) && targetSetIndex != sourceSetIndex) {
-                        MoveWithinTableCommand cmd = new MoveWithinTableCommand(
-                                actor.getTileData().id, sourceSetIndex, targetSetIndex);
-                        commandHistory.execute(cmd);
-                        refreshTileDisplay();
+                    } else if ("TABLE".equals(sourceArea)) {
+                        if (targetSetIndex >= 0 && targetSetIndex != sourceSetIndex) {
+                            MoveWithinTableCommand cmd = new MoveWithinTableCommand(
+                                    actor.getTileData().id, sourceSetIndex, targetSetIndex);
+                            commandHistory.execute(cmd);
+                            refreshTileDisplay();
+                        } else if (targetSetIndex == -1) {
+                            // Moved to empty space — create new set by returning then placing
+                            ReturnTileCommand ret = new ReturnTileCommand(
+                                    actor.getTileData().id, sourceSetIndex);
+                            commandHistory.execute(ret);
+                            PlaceTileCommand place = new PlaceTileCommand(
+                                    actor.getTileData().id, true, 0, "RUN");
+                            commandHistory.execute(place);
+                            refreshTileDisplay();
+                        }
                     }
-                } else {
-                    Gdx.app.log("DROP_DEBUG", "-> NO MATCH (dropY outside rack/table)");
                 }
+                highlightedSetIndex = -1; // Clear highlight
                 return true;
             }
         });
+    }
+
+    /**
+     * Attaches DragMoveListener to track live tile position during drag
+     * and highlight the bounding box of the set being hovered.
+     */
+    private void attachDragMoveListener(TileActor actor) {
+        actor.setDragMoveListener(new TileActor.DragMoveListener() {
+            @Override
+            public void onDragMove(TileActor a, float stageX, float stageY) {
+                if (stageY < TABLE_Y || stageY >= TABLE_Y + TABLE_H) {
+                    highlightedSetIndex = -1;
+                    return;
+                }
+                float localX = stageX - tableScroll.getX() + tableScroll.getScrollX();
+                float localY = stageY - TABLE_Y;
+                highlightedSetIndex = findSetIndexAtBoundingBox(localX, localY);
+            }
+
+            @Override
+            public void onDragEnd(TileActor a, float stageX, float stageY) {
+                highlightedSetIndex = -1;
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Bounding box helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the index of the set whose bounding box contains the given
+     * tableGroup-local coordinates, or -1 if no match.
+     */
+    private int findSetIndexAtBoundingBox(float localX, float localY) {
+        for (int i = 0; i < setBoundingBoxes.size(); i++) {
+            Rectangle bb = setBoundingBoxes.get(i);
+            if (bb.width > 0 && bb.contains(localX, localY)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Local validation: checks if tile_ids form a valid GROUP (same number, unique colors).
+     */
+    private boolean isValidGroupLocally(List<Integer> tileIds) {
+        if (tileIds == null || tileIds.size() < 3 || tileIds.size() > 4) return false;
+        java.util.Set<String> colors = new java.util.HashSet<>();
+        int expectedNumber = -1;
+        for (int id : tileIds) {
+            TileDto t = findTileById(id);
+            if (t == null) return false;
+            if (t.isJoker) continue;
+            if (expectedNumber == -1) expectedNumber = t.number;
+            else if (t.number != expectedNumber) return false;
+            if (!colors.add(t.color)) return false; // Duplicate color
+        }
+        return true;
+    }
+
+    /**
+     * Local validation: checks if tile_ids form a valid RUN (same color, sequential numbers).
+     * Sorts by number before checking sequence.
+     */
+    private boolean isValidRunLocally(List<Integer> tileIds) {
+        if (tileIds == null || tileIds.size() < 3) return false;
+        List<TileDto> nonJokers = new ArrayList<>();
+        int jokerCount = 0;
+        for (int id : tileIds) {
+            TileDto t = findTileById(id);
+            if (t == null) return false;
+            if (t.isJoker) { jokerCount++; continue; }
+            nonJokers.add(t);
+        }
+        if (nonJokers.isEmpty()) return true; // All jokers
+
+        // Check same color
+        String color = nonJokers.get(0).color;
+        for (TileDto t : nonJokers) {
+            if (!color.equals(t.color)) return false;
+        }
+
+        // Sort by number and check sequence with joker gaps
+        nonJokers.sort((a, b) -> Integer.compare(a.number, b.number));
+        int startNum = nonJokers.get(0).number;
+        int endNum = nonJokers.get(nonJokers.size() - 1).number;
+        int expectedLength = endNum - startNum + 1;
+        if (expectedLength != nonJokers.size() + jokerCount) return false;
+        if (startNum < 1 || endNum > 13) return false;
+
+        return true;
     }
 
     // -------------------------------------------------------------------------
@@ -657,30 +829,6 @@ public class GameScreen extends BaseScreen {
         placeholder.number = 0;
         placeholder.isJoker = false;
         return placeholder;
-    }
-
-    /**
-     * Returns the index of the table set whose horizontal span contains dropX,
-     * or -1 to indicate "create new set".
-     */
-    private int findSetIndexAtPosition(float dropX, float dropY) {
-        if (dropY < TABLE_Y || dropY >= TABLE_Y + TABLE_H) return -1;
-
-        List<TableSetDto> sets = gsm.getTableSets();
-        float setMargin = 12f;
-        float tileW     = Constants.TILE_WIDTH * 0.85f + 2f;
-        float cursorX   = setMargin;
-
-        for (int si = 0; si < sets.size(); si++) {
-            TableSetDto set = sets.get(si);
-            int count = (set.tileIds != null) ? set.tileIds.size() : 0;
-            float setWidth = count * tileW + setMargin * 2;
-            if (dropX >= cursorX && dropX < cursorX + setWidth) {
-                return si;
-            }
-            cursorX += setWidth;
-        }
-        return -1; // new set
     }
 
     private void updateTurnInfo() {
@@ -741,12 +889,45 @@ public class GameScreen extends BaseScreen {
     }
 
     // -------------------------------------------------------------------------
+    // Bounding Box Highlight Rendering
+    // -------------------------------------------------------------------------
+
+    @Override
+    protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
+        if (highlightedSetIndex < 0 || highlightedSetIndex >= setBoundingBoxes.size()) return;
+        Rectangle bb = setBoundingBoxes.get(highlightedSetIndex);
+        if (bb.width <= 0) return;
+
+        // Convert tableGroup-local coords to screen coords
+        float screenX = bb.x - tableScroll.getScrollX() + tableScroll.getX();
+        float screenY = bb.y + TABLE_Y;
+
+        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                           com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        bbRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        bbRenderer.setColor(0.3f, 0.6f, 1f, 0.25f); // Semi-transparent blue
+        bbRenderer.rect(screenX, screenY, bb.width, bb.height);
+        bbRenderer.end();
+
+        // Draw border
+        bbRenderer.begin(ShapeRenderer.ShapeType.Line);
+        bbRenderer.setColor(0.4f, 0.7f, 1f, 0.7f); // Brighter blue border
+        bbRenderer.rect(screenX, screenY, bb.width, bb.height);
+        bbRenderer.end();
+
+        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+    }
+
+    // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
 
     @Override
     protected void onDispose() {
         if (tileFont != null) tileFont.dispose();
+        if (bbRenderer != null) bbRenderer.dispose();
         // Dispose tile actors — guard against null groups (e.g. if buildUI() never completed)
         if (rackGroup != null) {
             for (Actor a : rackGroup.getChildren()) {

@@ -133,6 +133,7 @@ public class NetworkManager {
      * Use this when manual JSON construction is needed (e.g., to guarantee quoted keys).
      */
     public <T> void postRaw(String endpoint, String bodyJson, Class<T> responseType, ApiCallback<T> cb) {
+        com.badlogic.gdx.Gdx.app.log("HTTP_BODY", "POST " + endpoint + " body: " + bodyJson);
         new Thread(() -> {
             try {
                 URL url = new URL(Constants.BASE_URL + endpoint);

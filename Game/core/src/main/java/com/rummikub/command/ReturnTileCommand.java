@@ -29,7 +29,7 @@ public class ReturnTileCommand implements TileCommand {
         List<TableSetDto> sets = gsm.getTableSets();
         TableSetDto source = sets.get(sourceSetIndex);
 
-        if (!source.tileIds.remove(Integer.valueOf(tileId))) return;  // not found
+        if (!source.tile_ids.remove(Integer.valueOf(tileId))) return;  // not found
 
         // Reconstruct a minimal TileDto from the tile map held by the state manager.
         // We search all known tiles (rack + table) to find the matching DTO.
@@ -40,8 +40,10 @@ public class ReturnTileCommand implements TileCommand {
             savedTile = new TileDto(tileId, "BLACK", 0, false);
         }
 
-        if (source.tileIds.isEmpty()) {
+        if (source.tile_ids.isEmpty()) {
             sets.remove(sourceSetIndex);
+        } else {
+            source.set_type = gsm.detectSetType(source.tile_ids);
         }
 
         gsm.getMyRackTiles().add(savedTile);
@@ -58,12 +60,14 @@ public class ReturnTileCommand implements TileCommand {
 
         // Re-insert into the original set (if it still exists at that index)
         if (sourceSetIndex < sets.size()) {
-            sets.get(sourceSetIndex).tileIds.add(tileId);
+            TableSetDto target = sets.get(sourceSetIndex);
+            target.tile_ids.add(tileId);
+            target.set_type = gsm.detectSetType(target.tile_ids);
         } else {
             // Set was removed when it became empty — recreate it
-            com.rummikub.network.dto.TableSetDto restored =
-                    new com.rummikub.network.dto.TableSetDto("RUN", new java.util.ArrayList<>());
-            restored.tileIds.add(tileId);
+            TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
+            restored.tile_ids.add(tileId);
+            restored.set_type = gsm.detectSetType(restored.tile_ids);
             sets.add(sourceSetIndex, restored);
         }
 
@@ -81,9 +85,10 @@ public class ReturnTileCommand implements TileCommand {
      * via the state manager's current rack list before the add.)
      */
     private TileDto findTileDto(int id) {
-        // At execute() time the tile is no longer in any set, and not yet in the rack.
-        // We rely on the snapshot stored in GameStateManager to find the original DTO.
-        // As a practical fallback we scan the rack (in case of partial state).
+        // O(1) lookup from tile cache (includes rack + table tiles)
+        TileDto cached = gsm.getTileById(id);
+        if (cached != null) return cached;
+        // Fallback: linear search in rack
         for (TileDto t : gsm.getMyRackTiles()) {
             if (t.id == id) return t;
         }

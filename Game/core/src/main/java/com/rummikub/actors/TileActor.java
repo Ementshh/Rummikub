@@ -22,6 +22,19 @@ import com.rummikub.strategy.TileRenderStrategy;
 public class TileActor extends Actor {
 
     // -------------------------------------------------------------------------
+    // Drag callback interface
+    // -------------------------------------------------------------------------
+
+    /**
+     * Callback for live drag position tracking.
+     * GameScreen sets this to highlight bounding boxes during drag.
+     */
+    public interface DragMoveListener {
+        void onDragMove(TileActor actor, float stageX, float stageY);
+        void onDragEnd(TileActor actor, float stageX, float stageY);
+    }
+
+    // -------------------------------------------------------------------------
     // Fields
     // -------------------------------------------------------------------------
 
@@ -33,6 +46,7 @@ public class TileActor extends Actor {
     private TileRenderStrategy strategy;
     private boolean selected;
     private boolean dragging;
+    private DragMoveListener dragMoveListener;
 
     /** Owned by this actor — must be disposed. */
     private final ShapeRenderer shapeRenderer;
@@ -81,6 +95,12 @@ public class TileActor extends Actor {
                              float x, float y, int pointer) {
                 if (strategy.isDraggable()) {
                     moveBy(x - getWidth() / 2f, y - getHeight() / 2f);
+                    // Notify listener with stage coordinates for bounding box highlight
+                    if (dragMoveListener != null) {
+                        com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(getX(), getY());
+                        localToStageCoordinates(pos);
+                        dragMoveListener.onDragMove(TileActor.this, pos.x, pos.y);
+                    }
                 }
             }
 
@@ -92,6 +112,9 @@ public class TileActor extends Actor {
                 // can compare against screen-space constants (RACK_Y, TABLE_Y, etc.)
                 com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(getX(), getY());
                 localToStageCoordinates(stagePos);
+                if (dragMoveListener != null) {
+                    dragMoveListener.onDragEnd(TileActor.this, stagePos.x, stagePos.y);
+                }
                 fire(new TileDropEvent(TileActor.this, stagePos.x, stagePos.y));
             }
         });
@@ -166,6 +189,10 @@ public class TileActor extends Actor {
     public void setStrategy(TileRenderStrategy strategy) {
         this.strategy = strategy;
         setSize(strategy.getTileWidth(), strategy.getTileHeight());
+    }
+
+    public void setDragMoveListener(DragMoveListener listener) {
+        this.dragMoveListener = listener;
     }
 
     // -------------------------------------------------------------------------
