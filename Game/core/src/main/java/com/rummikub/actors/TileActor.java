@@ -96,8 +96,9 @@ public class TileActor extends Actor {
                 if (strategy.isDraggable()) {
                     moveBy(x - getWidth() / 2f, y - getHeight() / 2f);
                     // Notify listener with stage coordinates for bounding box highlight
+                    // (0,0) = actor's own origin in local space → converted to stage coords
                     if (dragMoveListener != null) {
-                        com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(getX(), getY());
+                        com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(0, 0);
                         localToStageCoordinates(pos);
                         dragMoveListener.onDragMove(TileActor.this, pos.x, pos.y);
                     }
@@ -108,9 +109,9 @@ public class TileActor extends Actor {
             public void dragStop(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                  float x, float y, int pointer) {
                 dragging = false;
-                // Convert local position to STAGE coordinates so drop detection
-                // can compare against screen-space constants (RACK_Y, TABLE_Y, etc.)
-                com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(getX(), getY());
+                // Convert actor origin (0,0 in local space) to STAGE coordinates
+                // so drop detection can compare against screen-space constants
+                com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(0, 0);
                 localToStageCoordinates(stagePos);
                 if (dragMoveListener != null) {
                     dragMoveListener.onDragEnd(TileActor.this, stagePos.x, stagePos.y);
