@@ -138,10 +138,6 @@ public class RummikubLogicService {
             }
         }
 
-        if (meldPoints < 30) {
-            return new ValidationResult(false, "Poin Initial Meld kurang dari 30 (Hanya " + meldPoints + ").", 0);
-        }
-
         return new ValidationResult(true, "OK", meldPoints);
     }
 }

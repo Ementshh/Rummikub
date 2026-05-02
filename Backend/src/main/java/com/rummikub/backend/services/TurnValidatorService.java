@@ -95,7 +95,10 @@ public class TurnValidatorService {
             if (!meldCheck.valid) {
                 throw new RuntimeException(meldCheck.reason);
             }
-            participant.setHasDoneInitialMeld(true);
+            participant.setScore(participant.getScore() + meldCheck.value);
+            if (participant.getScore() >= 30) {
+                participant.setHasDoneInitialMeld(true);
+            }
             gameParticipantRepository.save(participant);
         }
 
