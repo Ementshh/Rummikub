@@ -25,8 +25,10 @@ import com.rummikub.network.NetworkManager;
 import com.rummikub.network.dto.*;
 import com.rummikub.screens.states.*;
 import com.rummikub.state.GameStateManager;
+import com.rummikub.strategy.LockedTileStrategy;
 import com.rummikub.strategy.RackTileStrategy;
 import com.rummikub.strategy.TableTileStrategy;
+import com.rummikub.strategy.TileRenderStrategy;
 import com.rummikub.utils.Constants;
 
 import java.util.ArrayList;
@@ -354,7 +356,7 @@ public class GameScreen extends BaseScreen {
                 Gdx.app.log("DEBUG_TURN", "isMyTurn() result: " + gsm.isMyTurn());
 
                 refreshTileDisplay();
-                updateStatusLabel();
+                updateMeldPointsDisplay();
 
                 if (gsm.isMyTurn() && !(currentState instanceof MyTurnState)) {
                     transitionTo(new MyTurnState());
@@ -435,19 +437,45 @@ public class GameScreen extends BaseScreen {
     }
 
     private void onEndTurnClicked() {
-        // Validasi minimal 3 tile per set
         List<TableSetDto> sets = gsm.getTableSets();
+
+        // Hitung jumlah tile baru di meja (dari set yang isNewThisTurn = true)
+        int newTileCount = 0;
+        for (TableSetDto set : sets) {
+            if (set.isNewThisTurn) {
+                newTileCount += set.tile_ids.size();
+            }
+        }
+
+        // Aturan untuk pemain yang belum initial meld
+        if (!gsm.isHasDoneInitialMeld()) {
+            if (newTileCount == 0) {
+                // Tidak ada tile baru sama sekali → wajib draw
+                showStatusMessage("Harus draw jika tidak meletakkan tile!");
+                return;
+            }
+            // Ada tile baru tapi < 3 → set belum valid
+            if (newTileCount < 3) {
+                showStatusMessage("Set belum lengkap! Minimal 3 tile dalam satu set.");
+                return;
+            }
+            // Ada >= 3 tile baru → boleh end turn, server yang validasi poin
+        }
+
+        // Validasi struktural umum: setiap set minimal 3 tile
         for (int i = 0; i < sets.size(); i++) {
             if (sets.get(i).tile_ids.size() < 3) {
-                Gdx.app.log("GameScreen", "Set #" + (i + 1) + " belum lengkap (min 3 tile)!");
-                statusLabel.setText("Set #" + (i + 1) + " harus memiliki minimal 3 ubin!");
+                showStatusMessage("Set #" + (i + 1) + " belum lengkap (min 3 tile)!");
                 return;
             }
         }
 
-        EndTurnRequest req = gsm.buildEndTurnRequest();
-        Gdx.app.log("GameScreen", "Sending end-turn: " + req.table_sets.size() + " sets, " + req.rack_tiles.size() + " rack tiles");
+        // Kirim ke server
         transitionTo(new SubmittingState());
+        EndTurnRequest req = gsm.buildEndTurnRequest();
+        Gdx.app.log("GameScreen", "Sending end-turn: "
+                + sets.size() + " sets, "
+                + gsm.getMyRackTiles().size() + " rack tiles");
 
         facade.endTurn(gameId, req, new ApiCallback<EndTurnResponse>() {
             @Override
@@ -455,43 +483,33 @@ public class GameScreen extends BaseScreen {
                 if (r.success) {
                     commandHistory.clear();
                     if (r.data != null && r.data.gameOver) {
-                        gsm.setWinnerUsername(r.data.winner);
                         transitionTo(new GameOverState());
                     } else {
-                        // Poll to get the LATEST server state (which player's turn it is now)
-                        // Only THEN decide which state to transition to
-                        facade.getGameState(gameId, new ApiCallback<GameStateResponse>() {
-                            @Override
-                            public void onSuccess(GameStateResponse gs) {
-                                if (gs != null && gs.success && gs.data != null) {
-                                    gsm.loadFromServer(gs.data);
-                                    refreshTileDisplay();
-                                }
-                                // After state is updated, go to waiting (poll loop will switch to MyTurnState if needed)
-                                transitionTo(new WaitingTurnState());
-                            }
-
-                            @Override
-                            public void onFailure(String err) {
-                                Gdx.app.log("GameScreen", "Post-endturn poll failed: " + err);
-                                transitionTo(new WaitingTurnState());
-                            }
-                        });
+                        transitionTo(new WaitingTurnState());
+                        pollGameState();
                     }
                 } else {
-                    Gdx.app.log("GameScreen", "End-turn rejected: " + r.error);
-                    statusLabel.setText("Ditolak: " + (r.error != null ? r.error : "Set tidak valid"));
+                    // Server menolak — tampilkan pesan, kembalikan state, biarkan pemain coba lagi
+                    String errMsg = (r.error != null) ? r.error : "End turn ditolak";
+                    showStatusMessage("Ditolak: " + errMsg);
+                    gsm.resetToSnapshot();
+                    refreshTileDisplay();
                     transitionTo(new MyTurnState());
                 }
             }
-
             @Override
             public void onFailure(String err) {
-                Gdx.app.log("GameScreen", "End-turn error: " + err);
-                statusLabel.setText("Error: " + err);
+                showStatusMessage("Koneksi gagal: " + err);
+                gsm.resetToSnapshot();
+                refreshTileDisplay();
                 transitionTo(new MyTurnState());
             }
         });
+    }
+
+    private void showStatusMessage(String msg) {
+        statusLabel.setText(msg);
+        Gdx.app.log("GameScreen", "Status: " + msg);
     }
 
     // -------------------------------------------------------------------------
@@ -506,7 +524,7 @@ public class GameScreen extends BaseScreen {
         rebuildRackDisplay();
         rebuildTableDisplay();
         updateTurnInfo();
-        updateStatusLabel();
+        updateMeldPointsDisplay();
     }
 
     public void rebuildRackDisplay() {
@@ -578,8 +596,10 @@ public class GameScreen extends BaseScreen {
                 labelText = "INCOMPLETE (" + tileCount + ")";
                 labelColor = new Color(0.6f, 0.6f, 0.6f, 1f); // Grey
             } else {
-                String detectedType = gsm.detectSetType(set.tile_ids);
-                set.set_type = detectedType; // Keep in sync
+                if (set.isNewThisTurn) {
+                    set.set_type = gsm.detectSetType(set.tile_ids);
+                }
+                String detectedType = set.set_type != null ? set.set_type : "RUN";
                 if ("GROUP".equals(detectedType)) {
                     // Verify it's a valid group (unique colors)
                     boolean valid = isValidGroupLocally(set.tile_ids);
@@ -599,13 +619,20 @@ public class GameScreen extends BaseScreen {
             setLabel.setPosition(cursorX, tileY + tileH + 6);
             tableGroup.addActor(setLabel);
 
-            // Render tiles in this set
             for (int ti = 0; ti < set.tile_ids.size(); ti++) {
                 int tileId = set.tile_ids.get(ti);
-                TileDto dto = findTileById(tileId);
-                if (dto == null) continue;
+                TileDto dto = gsm.getTileById(tileId); // FIX 5: ambil dari cache
+                
+                if (dto == null) {
+                    Gdx.app.log("RENDER_ERR", "TileDto not found in cache for id=" + tileId);
+                    continue; 
+                }
 
-                TileActor actor = TileActorFactory.create(dto, new TableTileStrategy());
+                TileRenderStrategy strategy = new TableTileStrategy();
+                if (!gsm.isHasDoneInitialMeld() && !set.isNewThisTurn) {
+                    strategy = new LockedTileStrategy();
+                }
+                TileActor actor = TileActorFactory.create(dto, strategy);
                 actor.setPosition(cursorX + ti * tileW, tileY);
                 final int setIndex = si;
                 attachDropListener(actor, "TABLE", setIndex);
@@ -617,6 +644,7 @@ public class GameScreen extends BaseScreen {
 
         // "New set" drop zone at the end
         addNewSetDropZone(cursorX, tileY);
+        updateMeldPointsDisplay();
     }
 
     /**
@@ -669,6 +697,15 @@ public class GameScreen extends BaseScreen {
                 if (dropY >= RACK_Y && dropY < RACK_Y + RACK_H) {
                     // Dropped back onto rack
                     if ("TABLE".equals(sourceArea)) {
+                        // Blokir drag tile dari set lama ke rack jika belum initial meld
+                        if (!gsm.isHasDoneInitialMeld()) {
+                            TableSetDto srcSet = gsm.getTableSets().get(sourceSetIndex);
+                            if (!srcSet.isNewThisTurn) {
+                                showStatusMessage("Set lama tidak boleh disentuh sebelum meld!");
+                                return true;
+                            }
+                        }
+
                         ReturnTileCommand cmd = new ReturnTileCommand(
                                 actor.getTileData().id, sourceSetIndex);
                         commandHistory.execute(cmd);
@@ -853,13 +890,29 @@ public class GameScreen extends BaseScreen {
         }
     }
 
-    private void updateStatusLabel() {
-        if (gsm.isHasDoneInitialMeld()) {
+    private void updateMeldPointsDisplay() {
+        if (!gsm.isHasDoneInitialMeld()) {
+            int points = 0;
+            int newTileCount = 0;
+            for (TableSetDto set : gsm.getTableSets()) {
+                if (set.isNewThisTurn) {
+                    newTileCount += set.tile_ids.size();
+                    for (int id : set.tile_ids) {
+                        TileDto t = gsm.getTileById(id);
+                        if (t != null && !t.isJoker) points += t.number;
+                    }
+                }
+            }
+            if (newTileCount == 0) {
+                statusLabel.setText("Meld: BELUM — harus draw atau taruh tile");
+                statusLabel.setColor(Color.YELLOW);
+            } else {
+                statusLabel.setText("Meld: " + points + "/30 poin");
+                statusLabel.setColor(points >= 30 ? Color.GREEN : Color.YELLOW);
+            }
+        } else {
             statusLabel.setText("Meld: SUDAH ✓");
             statusLabel.setColor(Color.GREEN);
-        } else {
-            statusLabel.setText("Meld: BELUM (min 30 poin)");
-            statusLabel.setColor(Color.ORANGE);
         }
     }
 

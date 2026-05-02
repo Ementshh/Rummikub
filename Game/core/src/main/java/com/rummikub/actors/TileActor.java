@@ -86,6 +86,7 @@ public class TileActor extends Actor {
             @Override
             public void dragStart(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                   float x, float y, int pointer) {
+                if (!strategy.isDraggable()) return;
                 dragging = true;
                 toFront();
             }
@@ -93,24 +94,22 @@ public class TileActor extends Actor {
             @Override
             public void drag(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                              float x, float y, int pointer) {
-                if (strategy.isDraggable()) {
-                    moveBy(x - getWidth() / 2f, y - getHeight() / 2f);
-                    // Notify listener with stage coordinates for bounding box highlight
-                    // (0,0) = actor's own origin in local space → converted to stage coords
-                    if (dragMoveListener != null) {
-                        com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(0, 0);
-                        localToStageCoordinates(pos);
-                        dragMoveListener.onDragMove(TileActor.this, pos.x, pos.y);
-                    }
+                if (!dragging) return;
+                moveBy(x - getWidth() / 2f, y - getHeight() / 2f);
+                // Notify listener with stage coordinates for bounding box highlight
+                if (dragMoveListener != null) {
+                    com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(0, 0);
+                    localToStageCoordinates(pos);
+                    dragMoveListener.onDragMove(TileActor.this, pos.x, pos.y);
                 }
             }
 
             @Override
             public void dragStop(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                  float x, float y, int pointer) {
+                if (!dragging) return;
                 dragging = false;
                 // Convert actor origin (0,0 in local space) to STAGE coordinates
-                // so drop detection can compare against screen-space constants
                 com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(0, 0);
                 localToStageCoordinates(stagePos);
                 if (dragMoveListener != null) {

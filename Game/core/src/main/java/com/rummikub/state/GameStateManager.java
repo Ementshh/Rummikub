@@ -89,9 +89,12 @@ public class GameStateManager {
         
         // Cache table tiles (if server provided them in TableSetDto.tiles)
         for (TableSetDto set : this.tableSets) {
+            set.isNewThisTurn = false; // set dari server = set lama, type sudah benar
             if (set.tiles != null) {
                 for (TileDto t : set.tiles) {
                     tileCache.put(t.id, t);
+                    com.badlogic.gdx.Gdx.app.log("CACHE", "Cached table tile: id=" + t.id
+                        + " color=" + t.color + " num=" + t.number);
                 }
             }
         }
@@ -169,7 +172,10 @@ public class GameStateManager {
         for (TableSetDto set : tableSets) {
             // Buat objek baru yang bersih untuk dikirim ke server
             TableSetDto payload = new TableSetDto();
-            payload.set_type = detectSetType(set.tile_ids); // Auto-detect before sending
+            
+            // JANGAN panggil detectSetType() di sini
+            // Gunakan set_type yang sudah ada (dari server atau dari deteksi saat drag)
+            payload.set_type = (set.set_type != null) ? set.set_type : "RUN";
             payload.tile_ids = new ArrayList<>(set.tile_ids);
             
             // Validasi: jangan kirim set kosong
@@ -181,7 +187,9 @@ public class GameStateManager {
             req.table_sets.add(payload);
             
             com.badlogic.gdx.Gdx.app.log("END_TURN_REQ", 
-                "set_type=" + payload.set_type + " tile_ids=" + payload.tile_ids);
+                "set_type=" + payload.set_type 
+                + " tile_ids=" + payload.tile_ids
+                + " isNew=" + set.isNewThisTurn);
         }
         
         req.rack_tiles = new ArrayList<>();
@@ -282,6 +290,7 @@ public class GameStateManager {
         List<TableSetDto> copy = new ArrayList<>();
         for (TableSetDto s : source) {
             TableSetDto newSet = new TableSetDto(s.set_type, new ArrayList<>(s.tile_ids));
+            newSet.isNewThisTurn = s.isNewThisTurn;
             // Also copy tiles cache list if present
             if (s.tiles != null) {
                 newSet.tiles = new ArrayList<>(s.tiles);

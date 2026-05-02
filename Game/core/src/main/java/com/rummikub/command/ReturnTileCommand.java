@@ -43,7 +43,9 @@ public class ReturnTileCommand implements TileCommand {
         if (source.tile_ids.isEmpty()) {
             sets.remove(sourceSetIndex);
         } else {
-            source.set_type = gsm.detectSetType(source.tile_ids);
+            if (source.isNewThisTurn) {
+                source.set_type = gsm.detectSetType(source.tile_ids);
+            }
         }
 
         gsm.getMyRackTiles().add(savedTile);
@@ -62,10 +64,13 @@ public class ReturnTileCommand implements TileCommand {
         if (sourceSetIndex < sets.size()) {
             TableSetDto target = sets.get(sourceSetIndex);
             target.tile_ids.add(tileId);
-            target.set_type = gsm.detectSetType(target.tile_ids);
+            if (target.isNewThisTurn) {
+                target.set_type = gsm.detectSetType(target.tile_ids);
+            }
         } else {
             // Set was removed when it became empty — recreate it
             TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
+            restored.isNewThisTurn = true;
             restored.tile_ids.add(tileId);
             restored.set_type = gsm.detectSetType(restored.tile_ids);
             sets.add(sourceSetIndex, restored);

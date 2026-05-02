@@ -41,12 +41,18 @@ public class MoveWithinTableCommand implements TileCommand {
                     : targetSetIndex;
             TableSetDto target = sets.get(adjustedTarget);
             target.tile_ids.add(tileId);
-            target.set_type = gsm.detectSetType(target.tile_ids);
+            if (target.isNewThisTurn) {
+                target.set_type = gsm.detectSetType(target.tile_ids);
+            }
         } else {
-            source.set_type = gsm.detectSetType(source.tile_ids);
+            if (source.isNewThisTurn) {
+                source.set_type = gsm.detectSetType(source.tile_ids);
+            }
             TableSetDto target = sets.get(targetSetIndex);
             target.tile_ids.add(tileId);
-            target.set_type = gsm.detectSetType(target.tile_ids);
+            if (target.isNewThisTurn) {
+                target.set_type = gsm.detectSetType(target.tile_ids);
+            }
         }
     }
 
@@ -62,7 +68,9 @@ public class MoveWithinTableCommand implements TileCommand {
         TableSetDto target = sets.get(currentTarget);
         target.tile_ids.remove(Integer.valueOf(tileId));
         if (!target.tile_ids.isEmpty()) {
-            target.set_type = gsm.detectSetType(target.tile_ids);
+            if (target.isNewThisTurn) {
+                target.set_type = gsm.detectSetType(target.tile_ids);
+            }
         } else {
             sets.remove(currentTarget);
         }
@@ -70,13 +78,16 @@ public class MoveWithinTableCommand implements TileCommand {
         if (sourceSetRemoved) {
             // Recreate the source set with just this tile
             TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
+            restored.isNewThisTurn = true; // assume new if it was removed? actually ambiguous, but safe
             restored.tile_ids.add(tileId);
             restored.set_type = gsm.detectSetType(restored.tile_ids);
             sets.add(sourceSetIndex, restored);
         } else {
             TableSetDto src = sets.get(sourceSetIndex);
             src.tile_ids.add(tileId);
-            src.set_type = gsm.detectSetType(src.tile_ids);
+            if (src.isNewThisTurn) {
+                src.set_type = gsm.detectSetType(src.tile_ids);
+            }
         }
 
         sourceSetRemoved = false;

@@ -53,13 +53,17 @@ public class PlaceTileCommand implements TileCommand {
 
         if (toNewSet) {
             TableSetDto newSet = new TableSetDto(setType, new ArrayList<>());
+            newSet.isNewThisTurn = true; // set baru = boleh di-detect
             newSet.tile_ids.add(tileId);
             newSet.set_type = gsm.detectSetType(newSet.tile_ids);
             sets.add(newSet);
         } else {
             TableSetDto target = sets.get(targetSetIndex);
             target.tile_ids.add(tileId);
-            target.set_type = gsm.detectSetType(target.tile_ids);
+            // Hanya update set_type untuk set yang BARU dibuat pemain ini
+            if (target.isNewThisTurn) {
+                target.set_type = gsm.detectSetType(target.tile_ids);
+            }
         }
     }
 
@@ -84,7 +88,9 @@ public class PlaceTileCommand implements TileCommand {
             if (target.tile_ids.isEmpty()) {
                 sets.remove(targetSetIndex);
             } else {
-                target.set_type = gsm.detectSetType(target.tile_ids);
+                if (target.isNewThisTurn) {
+                    target.set_type = gsm.detectSetType(target.tile_ids);
+                }
             }
         }
 
