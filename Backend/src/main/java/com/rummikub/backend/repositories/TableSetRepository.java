@@ -9,6 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface TableSetRepository extends JpaRepository<TableSet, UUID> {
-    List<TableSet> findByGameId(UUID gameId);
-    void deleteByGameId(UUID gameId);
+    List<TableSet> findByGameId(String gameId);
+    void deleteByGameId(String gameId);
 }

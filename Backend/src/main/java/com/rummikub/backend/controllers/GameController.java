@@ -36,7 +36,7 @@ public class GameController {
     }
 
     @PostMapping("/{id}/join")
-    public ResponseEntity<?> joinGame(@PathVariable UUID id) {
+    public ResponseEntity<?> joinGame(@PathVariable String id) {
         try {
             GameParticipant participant = gameService.joinGame(id, getCurrentUserId());
             return ResponseEntity.ok(Map.of("success", true, "data", participant));
@@ -46,7 +46,7 @@ public class GameController {
     }
 
     @PostMapping("/{id}/start")
-    public ResponseEntity<?> startGame(@PathVariable UUID id) {
+    public ResponseEntity<?> startGame(@PathVariable String id) {
         try {
             Map<String, Object> result = gameService.startGame(id);
             return ResponseEntity.ok(Map.of("success", true, "data", result));
@@ -61,7 +61,7 @@ public class GameController {
     }
 
     @PostMapping("/{id}/end-turn")
-    public ResponseEntity<?> endTurn(@PathVariable UUID id, @RequestBody EndTurnRequest request) {
+    public ResponseEntity<?> endTurn(@PathVariable String id, @RequestBody EndTurnRequest request) {
         try {
             if (request.table_sets == null || request.rack_tiles == null) {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Format body salah. table_sets dan rack_tiles harus berupa array."));
@@ -74,7 +74,7 @@ public class GameController {
     }
 
     @PostMapping("/{id}/draw")
-    public ResponseEntity<?> drawTile(@PathVariable UUID id) {
+    public ResponseEntity<?> drawTile(@PathVariable String id) {
         try {
             Map<String, Object> result = gameService.drawTilePenalty(id, getCurrentUserId());
             return ResponseEntity.ok(Map.of("success", true, "data", result));
@@ -84,7 +84,7 @@ public class GameController {
     }
 
     @GetMapping("/{id}/state")
-    public ResponseEntity<?> getGameState(@PathVariable UUID id) {
+    public ResponseEntity<?> getGameState(@PathVariable String id) {
         try {
             Map<String, Object> result = gameService.getGameState(id, getCurrentUserId());
             return ResponseEntity.ok(Map.of("success", true, "data", result));

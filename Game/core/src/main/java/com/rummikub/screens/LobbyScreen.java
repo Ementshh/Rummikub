@@ -148,7 +148,7 @@ public class LobbyScreen extends BaseScreen {
     }
 
     private void onJoinGameClicked() {
-        String gameId = gameIdField.getText().trim();
+        String gameId = gameIdField.getText().trim().toUpperCase();
         if (gameId.isEmpty()) {
             showError("Masukkan Game ID terlebih dahulu");
             return;

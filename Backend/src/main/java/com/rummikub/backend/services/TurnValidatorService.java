@@ -42,7 +42,7 @@ public class TurnValidatorService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public EndTurnResult executeEndTurn(UUID gameId, UUID participantId, List<RummikubLogicService.TableSetRequest> newTableSets, List<Integer> newRackTileIds) {
+    public EndTurnResult executeEndTurn(String gameId, UUID participantId, List<RummikubLogicService.TableSetRequest> newTableSets, List<Integer> newRackTileIds) {
         
         List<GameTile> oldState = gameTileRepository.findBoardAndRackState(gameId, participantId);
         

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface GameParticipantRepository extends JpaRepository<GameParticipant, UUID> {
-    List<GameParticipant> findByGameIdOrderByTurnOrderAsc(UUID gameId);
-    Optional<GameParticipant> findByGameIdAndUserId(UUID gameId, UUID userId);
-    int countByGameId(UUID gameId);
+    List<GameParticipant> findByGameIdOrderByTurnOrderAsc(String gameId);
+    Optional<GameParticipant> findByGameIdAndUserId(String gameId, UUID userId);
+    int countByGameId(String gameId);
 }

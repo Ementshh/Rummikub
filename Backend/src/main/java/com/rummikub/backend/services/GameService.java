@@ -32,14 +32,29 @@ public class GameService {
     @Autowired private RummikubLogicService rummikubLogicService;
     @Autowired private TurnValidatorService turnValidatorService;
 
+    private String generateRoomCode() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        Random rnd = new Random();
+        for (int i = 0; i < 6; i++) {
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
     @Transactional
     public Game createGame() {
         Game game = new Game();
+        String newId;
+        do {
+            newId = generateRoomCode();
+        } while (gameRepository.existsById(newId));
+        game.setId(newId);
         return gameRepository.save(game);
     }
 
     @Transactional
-    public GameParticipant joinGame(UUID gameId, UUID userId) {
+    public GameParticipant joinGame(String gameId, UUID userId) {
         Game game = gameRepository.findById(gameId).orElseThrow(() -> new RuntimeException("Game tidak ditemukan."));
         if (game.getStatus() != GameStatus.WAITING) {
             throw new RuntimeException("Game sudah dimulai atau selesai.");
@@ -63,7 +78,7 @@ public class GameService {
     }
 
     @Transactional
-    public Map<String, Object> startGame(UUID gameId) {
+    public Map<String, Object> startGame(String gameId) {
         Game game = gameRepository.findById(gameId).orElseThrow();
         if (game.getStatus() != GameStatus.WAITING) {
             throw new RuntimeException("Game sudah berjalan.");
@@ -120,7 +135,7 @@ public class GameService {
     }
 
     @Transactional
-    public Map<String, Object> executeEndTurn(UUID gameId, UUID userId, List<RummikubLogicService.TableSetRequest> tableSets, List<Integer> rackTileIds) {
+    public Map<String, Object> executeEndTurn(String gameId, UUID userId, List<RummikubLogicService.TableSetRequest> tableSets, List<Integer> rackTileIds) {
         GameParticipant participant = participantRepository.findByGameIdAndUserId(gameId, userId).orElseThrow(() -> new RuntimeException("Anda bukan peserta game ini."));
         Game game = gameRepository.findById(gameId).orElseThrow();
 
@@ -143,7 +158,7 @@ public class GameService {
     }
 
     @Transactional
-    public Map<String, Object> drawTilePenalty(UUID gameId, UUID userId) {
+    public Map<String, Object> drawTilePenalty(String gameId, UUID userId) {
         GameParticipant participant = participantRepository.findByGameIdAndUserId(gameId, userId).orElseThrow();
         Game game = gameRepository.findById(gameId).orElseThrow();
 
@@ -165,7 +180,7 @@ public class GameService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getGameState(UUID gameId, UUID userId) {
+    public Map<String, Object> getGameState(String gameId, UUID userId) {
         Game game = gameRepository.findById(gameId).orElseThrow(() -> new RuntimeException("Game tidak ditemukan."));
         List<GameParticipant> participants = participantRepository.findByGameIdOrderByTurnOrderAsc(gameId);
 
