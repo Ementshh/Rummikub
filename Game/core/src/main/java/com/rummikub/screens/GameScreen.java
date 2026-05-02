@@ -195,6 +195,7 @@ public class GameScreen extends BaseScreen {
         tableScroll.setBounds(0, TABLE_Y, Constants.SCREEN_WIDTH, TABLE_H);
         tableScroll.setScrollingDisabled(false, true);
         tableScroll.setFadeScrollBars(false);
+        tableScroll.setCancelTouchFocus(false);
 
         stage.addActor(tableScroll);
     }

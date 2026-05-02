@@ -82,25 +82,34 @@ public class TileActor extends Actor {
 
     private void setupDragListener() {
         addListener(new DragListener() {
+            private Actor dragProxy = null;
 
             @Override
             public void dragStart(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                   float x, float y, int pointer) {
                 if (!strategy.isDraggable()) return;
                 dragging = true;
-                toFront();
+                
+                com.badlogic.gdx.math.Vector2 stagePos = localToStageCoordinates(new com.badlogic.gdx.math.Vector2(0, 0));
+                
+                dragProxy = com.rummikub.factory.TileActorFactory.create(tileData, strategy);
+                dragProxy.setPosition(stagePos.x, stagePos.y);
+                getStage().addActor(dragProxy);
+                
+                TileActor.this.setVisible(false);
             }
 
             @Override
             public void drag(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                              float x, float y, int pointer) {
                 if (!dragging) return;
-                moveBy(x - getWidth() / 2f, y - getHeight() / 2f);
-                // Notify listener with stage coordinates for bounding box highlight
+                
+                if (dragProxy != null) {
+                    dragProxy.setPosition(event.getStageX() - getWidth() / 2f, event.getStageY() - getHeight() / 2f);
+                }
+
                 if (dragMoveListener != null) {
-                    com.badlogic.gdx.math.Vector2 pos = new com.badlogic.gdx.math.Vector2(0, 0);
-                    localToStageCoordinates(pos);
-                    dragMoveListener.onDragMove(TileActor.this, pos.x, pos.y);
+                    dragMoveListener.onDragMove(TileActor.this, event.getStageX(), event.getStageY());
                 }
             }
 
@@ -108,14 +117,20 @@ public class TileActor extends Actor {
             public void dragStop(com.badlogic.gdx.scenes.scene2d.InputEvent event,
                                  float x, float y, int pointer) {
                 if (!dragging) return;
-                dragging = false;
-                // Convert actor origin (0,0 in local space) to STAGE coordinates
-                com.badlogic.gdx.math.Vector2 stagePos = new com.badlogic.gdx.math.Vector2(0, 0);
-                localToStageCoordinates(stagePos);
-                if (dragMoveListener != null) {
-                    dragMoveListener.onDragEnd(TileActor.this, stagePos.x, stagePos.y);
+                
+                if (dragProxy != null) {
+                    dragProxy.remove();
+                    dragProxy = null;
                 }
-                fire(new TileDropEvent(TileActor.this, stagePos.x, stagePos.y));
+                
+                TileActor.this.setVisible(true);
+                dragging = false;
+
+                if (dragMoveListener != null) {
+                    dragMoveListener.onDragEnd(TileActor.this, event.getStageX(), event.getStageY());
+                }
+                
+                fire(new TileDropEvent(TileActor.this, event.getStageX(), event.getStageY()));
             }
         });
     }
