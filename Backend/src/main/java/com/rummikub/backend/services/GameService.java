@@ -13,6 +13,7 @@ import com.rummikub.backend.repositories.GameTileRepository;
 import com.rummikub.backend.repositories.UserRepository;
 import com.rummikub.backend.models.TableSet;
 import com.rummikub.backend.repositories.TableSetRepository;
+import com.rummikub.backend.repositories.TileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class GameService {
     @Autowired private UserRepository userRepository;
     @Autowired private GameTileRepository gameTileRepository;
     @Autowired private TableSetRepository tableSetRepository;
+    @Autowired private TileRepository tileRepository;
     @Autowired private RummikubLogicService rummikubLogicService;
     @Autowired private TurnValidatorService turnValidatorService;
 
@@ -96,8 +98,13 @@ public class GameService {
         gameRepository.save(game);
 
         // Setup 106 Ubin ke dalam Pool
+        List<Tile> masterTiles = tileRepository.findAll();
+        if (masterTiles.isEmpty()) {
+            throw new RuntimeException("Master tiles (106 ubin) belum ada di database. Silakan jalankan script seeder/dump.");
+        }
+
         List<GameTile> poolTiles = new ArrayList<>();
-        for (Tile t : rummikubLogicService.getAllTiles()) {
+        for (Tile t : masterTiles) {
             GameTile gt = new GameTile();
             gt.setGame(game);
             gt.setTile(t);
@@ -105,22 +112,25 @@ public class GameService {
             poolTiles.add(gt);
         }
         gameTileRepository.saveAll(poolTiles);
+        gameTileRepository.flush(); // Pastikan tersimpan sebelum di-query kembali
 
         // Bagi 14 ubin ke masing-masing pemain
         List<GameTile> allPoolTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.POOL);
         Collections.shuffle(allPoolTiles);
         
+        List<GameTile> tilesToUpdate = new ArrayList<>();
         int tileIndex = 0;
         for (GameParticipant p : participants) {
             for (int i = 0; i < 14; i++) {
-                if(tileIndex < allPoolTiles.size()){
+                if (tileIndex < allPoolTiles.size()) {
                     GameTile gt = allPoolTiles.get(tileIndex++);
                     gt.setLocation(TileLocation.RACK);
                     gt.setParticipant(p);
-                    gameTileRepository.save(gt);
+                    tilesToUpdate.add(gt);
                 }
             }
         }
+        gameTileRepository.saveAll(tilesToUpdate);
 
         return Map.of("message", "Game berhasil dimulai!", "firstTurnId", firstParticipant.getId());
     }
