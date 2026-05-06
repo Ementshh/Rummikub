@@ -218,6 +218,7 @@ public class GameService {
         if (requesterOpt.isPresent()) {
             GameParticipant requester = requesterOpt.get();
             data.put("hasDoneInitialMeld", requester.isHasDoneInitialMeld());
+            data.put("meldScore", requester.getScore());
 
             List<GameTile> rackTiles = gameTileRepository.findByGameIdAndParticipantIdAndLocationStr(gameId, requester.getId(), TileLocation.RACK.name());
             List<Map<String, Object>> rackDtos = new ArrayList<>();

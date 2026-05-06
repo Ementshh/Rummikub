@@ -18,6 +18,7 @@ public class GameStateResponse {
         public List<ParticipantDto> participants;
         public String winner;                       // username pemenang, null jika belum
         public boolean hasDoneInitialMeld;
+        public int meldScore;                       // Accumulated meld points from previous turns
         public Long turnStartedAt;                  // Unix timestamp millis (null jika game belum mulai)
 
         public GameData() {}

@@ -893,26 +893,34 @@ public class GameScreen extends BaseScreen {
 
     private void updateMeldPointsDisplay() {
         if (!gsm.isHasDoneInitialMeld()) {
-            int points = 0;
+            // Points from tiles placed THIS turn
+            int newPoints = 0;
             int newTileCount = 0;
             for (TableSetDto set : gsm.getTableSets()) {
                 if (set.isNewThisTurn) {
                     newTileCount += set.tile_ids.size();
                     for (int id : set.tile_ids) {
                         TileDto t = gsm.getTileById(id);
-                        if (t != null && !t.isJoker) points += t.number;
+                        if (t != null && !t.isJoker) newPoints += t.number;
                     }
                 }
             }
-            if (newTileCount == 0) {
+
+            // Total = accumulated score from previous turns + this turn's new points
+            int totalMeld = gsm.getMeldScore() + newPoints;
+
+            if (newTileCount == 0 && gsm.getMeldScore() == 0) {
                 statusLabel.setText("Meld: BELUM — harus draw atau taruh tile");
                 statusLabel.setColor(Color.YELLOW);
+            } else if (newTileCount == 0) {
+                statusLabel.setText("Meld: " + gsm.getMeldScore() + "/30 poin (sebelumnya)");
+                statusLabel.setColor(Color.YELLOW);
             } else {
-                statusLabel.setText("Meld: " + points + "/30 poin");
-                statusLabel.setColor(points >= 30 ? Color.GREEN : Color.YELLOW);
+                statusLabel.setText("Meld: " + totalMeld + "/30 poin");
+                statusLabel.setColor(totalMeld >= 30 ? Color.GREEN : Color.YELLOW);
             }
         } else {
-            statusLabel.setText("Meld: SUDAH ✓");
+            statusLabel.setText("Meld: SUDAH \u2713");
             statusLabel.setColor(Color.GREEN);
         }
     }

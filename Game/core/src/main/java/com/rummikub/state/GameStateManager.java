@@ -28,6 +28,7 @@ public class GameStateManager {
     private String currentTurnUserId;
     private long turnStartedAt;
     private boolean hasDoneInitialMeld;
+    private int meldScore;
     private String winnerUsername;
 
     // Live local state (manipulated by the player during their turn)
@@ -71,6 +72,7 @@ public class GameStateManager {
         this.gameId = data.id;
         this.currentTurnUserId = data.currentTurnUserId;
         this.hasDoneInitialMeld = data.hasDoneInitialMeld;
+        this.meldScore = data.meldScore;
         this.winnerUsername = data.winner;
 
         this.myRackTiles = data.myRackTiles != null ? new ArrayList<>(data.myRackTiles) : new ArrayList<>();
@@ -249,6 +251,9 @@ public class GameStateManager {
 
     public boolean isHasDoneInitialMeld() { return hasDoneInitialMeld; }
     public void setHasDoneInitialMeld(boolean hasDoneInitialMeld) { this.hasDoneInitialMeld = hasDoneInitialMeld; }
+
+    public int getMeldScore() { return meldScore; }
+    public void setMeldScore(int meldScore) { this.meldScore = meldScore; }
 
     public String getWinnerUsername() { return winnerUsername; }
     public void setWinnerUsername(String winnerUsername) { this.winnerUsername = winnerUsername; }
