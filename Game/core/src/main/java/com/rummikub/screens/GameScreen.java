@@ -563,6 +563,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     /**
      * Rebuilds all tile actors from the current GameStateManager state.
      * Orchestrates calls to the component renderers and HUD manager.
+     * Always re-applies the correct Touchable state to newly created actors.
      */
     public void refreshTileDisplay() {
         rebuildRackDisplay();
@@ -573,6 +574,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         applyTouchableToTiles();
     }
 
+    private void applyTouchableToTiles() {
         boolean myTurn = currentState instanceof MyTurnState;
         com.badlogic.gdx.scenes.scene2d.Touchable touchable = myTurn
                 ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
