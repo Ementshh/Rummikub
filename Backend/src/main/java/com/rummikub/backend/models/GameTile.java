@@ -29,9 +29,17 @@ public class GameTile {
     @JoinColumn(name = "tile_id", nullable = false)
     private Tile tile;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "tile_location default 'POOL'")
-    private TileLocation location = TileLocation.POOL;
+    @Column(name = "location", nullable = false)
+    private String locationStr = TileLocation.POOL.name();
+
+    public TileLocation getLocation() {
+        if (this.locationStr == null) return null;
+        return TileLocation.valueOf(this.locationStr);
+    }
+
+    public void setLocation(TileLocation location) {
+        this.locationStr = (location == null) ? null : location.name();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "participant_id")

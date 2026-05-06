@@ -115,7 +115,7 @@ public class GameService {
         gameTileRepository.flush();
 
         // Bagi 14 ubin ke masing-masing pemain
-        List<GameTile> allPoolTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.POOL);
+        List<GameTile> allPoolTiles = gameTileRepository.findByGameIdAndLocationStr(gameId, TileLocation.POOL.name());
         Collections.shuffle(allPoolTiles);
         
         List<GameTile> tilesToUpdate = new ArrayList<>();
@@ -174,7 +174,7 @@ public class GameService {
 
         if (!game.getCurrentTurnParticipant().getId().equals(participant.getId())) throw new RuntimeException("Bukan giliran Anda.");
 
-        List<GameTile> poolTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.POOL);
+        List<GameTile> poolTiles = gameTileRepository.findByGameIdAndLocationStr(gameId, TileLocation.POOL.name());
         if (poolTiles.isEmpty()) {
             throw new RuntimeException("Pool sudah habis, tapi giliran diputar.");
         }
@@ -219,7 +219,7 @@ public class GameService {
             GameParticipant requester = requesterOpt.get();
             data.put("hasDoneInitialMeld", requester.isHasDoneInitialMeld());
 
-            List<GameTile> rackTiles = gameTileRepository.findByGameIdAndParticipantIdAndLocation(gameId, requester.getId(), TileLocation.RACK);
+            List<GameTile> rackTiles = gameTileRepository.findByGameIdAndParticipantIdAndLocationStr(gameId, requester.getId(), TileLocation.RACK.name());
             List<Map<String, Object>> rackDtos = new ArrayList<>();
             for (GameTile gt : rackTiles) {
                 rackDtos.add(Map.of(
@@ -233,7 +233,7 @@ public class GameService {
         }
 
         List<TableSet> sets = tableSetRepository.findByGameId(gameId);
-        List<GameTile> tableTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.TABLE);
+        List<GameTile> tableTiles = gameTileRepository.findByGameIdAndLocationStr(gameId, TileLocation.TABLE.name());
         
         Map<UUID, List<Integer>> tilesBySet = new HashMap<>();
         for (GameTile gt : tableTiles) {

@@ -18,9 +18,17 @@ public class Game {
     @Column(length = 6)
     private String id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "game_status default 'WAITING'")
-    private GameStatus status = GameStatus.WAITING;
+    @Column(name = "status", nullable = false)
+    private String statusStr = GameStatus.WAITING.name();
+
+    public GameStatus getStatus() {
+        if (this.statusStr == null) return null;
+        return GameStatus.valueOf(this.statusStr);
+    }
+
+    public void setStatus(GameStatus status) {
+        this.statusStr = (status == null) ? null : status.name();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_turn_participant_id")

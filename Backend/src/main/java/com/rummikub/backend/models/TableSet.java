@@ -23,7 +23,15 @@ public class TableSet {
     @ToString.Exclude
     private Game game;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "set_type", nullable = false, columnDefinition = "set_type")
-    private SetType setType;
+    @Column(name = "set_type", nullable = false)
+    private String setTypeStr;
+
+    public SetType getSetType() {
+        if (this.setTypeStr == null) return null;
+        return SetType.valueOf(this.setTypeStr);
+    }
+
+    public void setSetType(SetType setType) {
+        this.setTypeStr = (setType == null) ? null : setType.name();
+    }
 }

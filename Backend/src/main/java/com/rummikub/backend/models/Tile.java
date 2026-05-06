@@ -14,9 +14,17 @@ public class Tile {
     @Id
     private Integer id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "color", columnDefinition = "tile_color")
-    private TileColor color;
+    @Column(name = "color")
+    private String colorStr;
+
+    public TileColor getColor() {
+        if (this.colorStr == null) return null;
+        return TileColor.valueOf(this.colorStr);
+    }
+
+    public void setColor(TileColor color) {
+        this.colorStr = (color == null) ? null : color.name();
+    }
 
     private Integer number;
 
