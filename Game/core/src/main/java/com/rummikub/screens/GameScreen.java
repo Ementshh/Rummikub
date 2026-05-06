@@ -198,6 +198,7 @@ public class GameScreen extends BaseScreen {
         tableScroll.setCancelTouchFocus(false);
         tableScroll.setFlickScroll(false); // Matikan scroll bawaan (kiri)
 
+        tableScroll.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
             private float lastX;
             private boolean isDraggingRight = false;
 
