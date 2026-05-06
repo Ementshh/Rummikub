@@ -29,6 +29,6 @@ public class LockedTileStrategy implements TileRenderStrategy {
 
     @Override
     public float getFontScale() {
-        return 0.7f;
+        return 1.5f;
     }
 }
