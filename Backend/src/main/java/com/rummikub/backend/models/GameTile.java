@@ -33,7 +33,7 @@ public class GameTile {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "tile_location default 'POOL'")
     private TileLocation location = TileLocation.POOL;
 
     @ManyToOne(fetch = FetchType.LAZY)

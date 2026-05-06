@@ -18,6 +18,7 @@ public class Tile {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "color", columnDefinition = "tile_color")
     private TileColor color;
 
     private Integer number;

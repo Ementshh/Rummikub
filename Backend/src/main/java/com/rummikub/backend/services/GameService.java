@@ -112,7 +112,7 @@ public class GameService {
             poolTiles.add(gt);
         }
         gameTileRepository.saveAll(poolTiles);
-        gameTileRepository.flush(); // Pastikan tersimpan sebelum di-query kembali
+        gameTileRepository.flush();
 
         // Bagi 14 ubin ke masing-masing pemain
         List<GameTile> allPoolTiles = gameTileRepository.findByGameIdAndLocation(gameId, TileLocation.POOL);

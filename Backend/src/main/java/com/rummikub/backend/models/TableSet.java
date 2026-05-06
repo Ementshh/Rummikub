@@ -27,6 +27,6 @@ public class TableSet {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "set_type", nullable = false)
+    @Column(name = "set_type", nullable = false, columnDefinition = "set_type")
     private SetType setType;
 }

@@ -22,7 +22,7 @@ public class Game {
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "game_status default 'WAITING'")
     private GameStatus status = GameStatus.WAITING;
 
     @ManyToOne(fetch = FetchType.LAZY)
