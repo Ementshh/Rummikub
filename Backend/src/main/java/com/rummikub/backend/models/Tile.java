@@ -4,8 +4,6 @@ import com.rummikub.backend.models.enums.TileColor;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Data
 @NoArgsConstructor
@@ -17,7 +15,6 @@ public class Tile {
     private Integer id;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "color", columnDefinition = "tile_color")
     private TileColor color;
 
