@@ -196,6 +196,37 @@ public class GameScreen extends BaseScreen {
         tableScroll.setScrollingDisabled(false, true);
         tableScroll.setFadeScrollBars(false);
         tableScroll.setCancelTouchFocus(false);
+        tableScroll.setFlickScroll(false); // Matikan scroll bawaan (kiri)
+
+            private float lastX;
+            private boolean isDraggingRight = false;
+
+            @Override
+            public boolean touchDown(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, int button) {
+                if (button == com.badlogic.gdx.Input.Buttons.RIGHT) {
+                    lastX = x;
+                    isDraggingRight = true;
+                    return true; // Tangkap event agar menerima touchDragged
+                }
+                return false;
+            }
+
+            @Override
+            public void touchDragged(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer) {
+                if (isDraggingRight) {
+                    float deltaX = x - lastX;
+                    tableScroll.setScrollX(tableScroll.getScrollX() - deltaX);
+                    lastX = x; // Update posisi relatif terhadap pointer
+                }
+            }
+
+            @Override
+            public void touchUp(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y, int pointer, int button) {
+                if (button == com.badlogic.gdx.Input.Buttons.RIGHT) {
+                    isDraggingRight = false;
+                }
+            }
+        });
 
         stage.addActor(tableScroll);
     }
