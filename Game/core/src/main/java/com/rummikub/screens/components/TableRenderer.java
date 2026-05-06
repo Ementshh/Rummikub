@@ -140,7 +140,7 @@ public class TableRenderer {
                 actor.setPosition(cursorX + ti * tileW, tileY);
                 final int setIndex = si;
                 dragHandler.attachDropListener(actor, "TABLE", setIndex);
-                dragHandler.attachDragMoveListener(actor);
+                dragHandler.attachDragMoveListener(actor, "TABLE");
                 tableGroup.addActor(actor);
             }
             cursorX += setPixelW + setMargin * 2;

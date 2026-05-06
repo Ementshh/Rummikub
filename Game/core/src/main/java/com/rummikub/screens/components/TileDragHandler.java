@@ -28,6 +28,8 @@ public class TileDragHandler {
         void refreshTileDisplay();
         void showStatusMessage(String msg);
         GameScreenState getCurrentState();
+        void onTableTileDragStart();
+        void onTableTileDragEnd();
     }
 
     // Layout zone boundaries
@@ -89,21 +91,10 @@ public class TileDragHandler {
                     + " targetBB=" + targetSetIndex);
 
                 if (dropY >= rackY && dropY < rackY + rackH) {
-                    // Dropped back onto rack
+                    // TABLE→RACK is never allowed: table tiles cannot be returned to the rack
                     if ("TABLE".equals(sourceArea)) {
-                        // Block drag from old set to rack if initial meld not done
-                        if (!gsm.isHasDoneInitialMeld()) {
-                            TableSetDto srcSet = gsm.getTableSets().get(sourceSetIndex);
-                            if (!srcSet.isNewThisTurn) {
-                                callback.showStatusMessage("Set lama tidak boleh disentuh sebelum meld!");
-                                return true;
-                            }
-                        }
-
-                        ReturnTileCommand cmd = new ReturnTileCommand(
-                                actor.getTileData().id, sourceSetIndex);
-                        commandHistory.execute(cmd);
-                        callback.refreshTileDisplay();
+                        callback.showStatusMessage("Tile dari meja tidak bisa dikembalikan ke rack!");
+                        return true;
                     }
                 } else if (dropY >= tableY && dropY < tableY + tableH) {
                     // Dropped onto table area
@@ -150,12 +141,15 @@ public class TileDragHandler {
      * Attaches DragMoveListener to track live tile position during drag
      * and highlight the bounding box of the set being hovered.
      */
-    public void attachDragMoveListener(TileActor actor) {
+    public void attachDragMoveListener(TileActor actor, String sourceArea) {
         ScrollPane tableScroll = tableRenderer.getTableScroll();
+        boolean isTableSource = "TABLE".equals(sourceArea);
 
         actor.setDragMoveListener(new TileActor.DragMoveListener() {
             @Override
             public void onDragMove(TileActor a, float stageX, float stageY) {
+                if (isTableSource) callback.onTableTileDragStart();
+
                 if (stageY < tableY || stageY >= tableY + tableH) {
                     tableRenderer.setHighlightedSetIndex(-1);
                     return;
@@ -169,6 +163,7 @@ public class TileDragHandler {
             @Override
             public void onDragEnd(TileActor a, float stageX, float stageY) {
                 tableRenderer.setHighlightedSetIndex(-1);
+                if (isTableSource) callback.onTableTileDragEnd();
             }
         });
     }

@@ -80,6 +80,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private TextButton resetButton;
     private TextButton endTurnButton;
     private Label waitingOverlay;
+    private Actor rackForbiddenOverlay;
 
     private Group rackGroup;
     private Group tableGroup;
@@ -286,6 +287,26 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         rackGroup = new Group();
         rackGroup.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
         stage.addActor(rackGroup);
+
+        rackForbiddenOverlay = buildRackForbiddenOverlay();
+        stage.addActor(rackForbiddenOverlay);
+    }
+
+    private Actor buildRackForbiddenOverlay() {
+        // Use a Table so we can center a label inside it
+        Table overlay = new Table();
+        overlay.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
+        overlay.setBackground(makeColorDrawable(new Color(0.7f, 0.05f, 0.05f, 0.80f)));
+
+        Label forbidLabel = makeLabel("⛔  Tidak bisa diletakkan di sini");
+        forbidLabel.setFontScale(1.1f);
+        forbidLabel.setColor(Color.WHITE);
+        overlay.add(forbidLabel).center();
+
+        overlay.setVisible(false);
+        // Non-interactive — never consumes touch events
+        overlay.setTouchable(com.badlogic.gdx.scenes.scene2d.Touchable.disabled);
+        return overlay;
     }
 
     private void buildWaitingOverlay() {
@@ -336,6 +357,16 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     @Override
     public void showStatusMessage(String msg) { hudManager.showStatusMessage(msg); }
+
+    @Override
+    public void onTableTileDragStart() {
+        if (rackForbiddenOverlay != null) rackForbiddenOverlay.setVisible(true);
+    }
+
+    @Override
+    public void onTableTileDragEnd() {
+        if (rackForbiddenOverlay != null) rackForbiddenOverlay.setVisible(false);
+    }
 
     // -------------------------------------------------------------------------
     // State callbacks (called by state objects)
@@ -558,7 +589,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
             TileActor actor = TileActorFactory.create(dto, new RackTileStrategy());
             actor.setPosition(startX + i * tileW, tileY);
             dragHandler.attachDropListener(actor, "RACK", -1);
-            dragHandler.attachDragMoveListener(actor);
+            dragHandler.attachDragMoveListener(actor, "RACK");
             rackGroup.addActor(actor);
         }
     }
