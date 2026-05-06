@@ -133,14 +133,16 @@ public class TableRenderer {
                 }
 
                 TileRenderStrategy strategy = new TableTileStrategy();
-                if (!gsm.isHasDoneInitialMeld() && !set.isNewThisTurn) {
+                // Apply LockedTileStrategy (dark border, but now draggable) to all committed tiles
+                if (!set.isNewThisTurn) {
                     strategy = new LockedTileStrategy();
                 }
                 TileActor actor = TileActorFactory.create(dto, strategy);
                 actor.setPosition(cursorX + ti * tileW, tileY);
                 final int setIndex = si;
-                dragHandler.attachDropListener(actor, "TABLE", setIndex);
-                dragHandler.attachDragMoveListener(actor, "TABLE");
+                boolean isCommitted = !set.isNewThisTurn;
+                dragHandler.attachDropListener(actor, "TABLE", setIndex, isCommitted);
+                dragHandler.attachDragMoveListener(actor, "TABLE", isCommitted);
                 tableGroup.addActor(actor);
             }
             cursorX += setPixelW + setMargin * 2;

@@ -569,6 +569,25 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         tableRenderer.rebuild(dragHandler);
         hudManager.updateTurnInfo();
         hudManager.updateMeldPointsDisplay();
+        // Re-apply the current state's touchable setting to ALL newly created actors
+        applyTouchableToTiles();
+    }
+
+        boolean myTurn = currentState instanceof MyTurnState;
+        com.badlogic.gdx.scenes.scene2d.Touchable touchable = myTurn
+                ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
+                : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
+
+        if (rackGroup != null) {
+            for (Actor a : rackGroup.getChildren()) {
+                a.setTouchable(touchable);
+            }
+        }
+        if (tableGroup != null) {
+            for (Actor a : tableGroup.getChildren()) {
+                a.setTouchable(touchable);
+            }
+        }
     }
 
     private void rebuildRackDisplay() {
@@ -588,8 +607,8 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
             TileDto dto = rack.get(i);
             TileActor actor = TileActorFactory.create(dto, new RackTileStrategy());
             actor.setPosition(startX + i * tileW, tileY);
-            dragHandler.attachDropListener(actor, "RACK", -1);
-            dragHandler.attachDragMoveListener(actor, "RACK");
+            dragHandler.attachDropListener(actor, "RACK", -1, false);
+            dragHandler.attachDragMoveListener(actor, "RACK", false);
             rackGroup.addActor(actor);
         }
     }

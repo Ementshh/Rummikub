@@ -4,7 +4,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.rummikub.utils.Constants;
 
 /**
- * Strategy for tiles that cannot be moved.
  */
 public class LockedTileStrategy implements TileRenderStrategy {
     @Override
@@ -19,7 +18,7 @@ public class LockedTileStrategy implements TileRenderStrategy {
 
     @Override
     public boolean isDraggable() {
-        return false;
+        return true;
     }
 
     @Override

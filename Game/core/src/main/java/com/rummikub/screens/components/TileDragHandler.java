@@ -60,11 +60,11 @@ public class TileDragHandler {
      * Attaches a TileDropEvent listener to a TileActor that executes the
      * appropriate Command when the tile is dropped.
      *
-     * Uses bounding box hit testing to determine which set (if any) the tile
-     * lands on. If the tile lands inside a set's bounding box, it joins that set.
-     * If it lands on the table but outside all bounding boxes, it creates a new set.
+     * @param isCommittedSet true if the tile belongs to a set that was
+     *                       committed in a previous end-turn (isNewThisTurn=false).
+     *                       Such tiles cannot be returned to the rack.
      */
-    public void attachDropListener(TileActor actor, String sourceArea, int sourceSetIndex) {
+    public void attachDropListener(TileActor actor, String sourceArea, int sourceSetIndex, boolean isCommittedSet) {
         ScrollPane tableScroll = tableRenderer.getTableScroll();
 
         actor.addListener(new com.badlogic.gdx.scenes.scene2d.EventListener() {
@@ -91,9 +91,15 @@ public class TileDragHandler {
                     + " targetBB=" + targetSetIndex);
 
                 if (dropY >= rackY && dropY < rackY + rackH) {
-                    // TABLE→RACK is never allowed: table tiles cannot be returned to the rack
                     if ("TABLE".equals(sourceArea)) {
-                        callback.showStatusMessage("Tile dari meja tidak bisa dikembalikan ke rack!");
+                        if (isCommittedSet) {
+                            callback.showStatusMessage("Set lama tidak bisa dikembalikan ke rack!");
+                        } else {
+                            ReturnTileCommand cmd = new ReturnTileCommand(
+                                    actor.getTileData().id, sourceSetIndex);
+                            commandHistory.execute(cmd);
+                            callback.refreshTileDisplay();
+                        }
                         return true;
                     }
                 } else if (dropY >= tableY && dropY < tableY + tableH) {
@@ -140,15 +146,19 @@ public class TileDragHandler {
     /**
      * Attaches DragMoveListener to track live tile position during drag
      * and highlight the bounding box of the set being hovered.
+     *
+     * @param isCommittedSet true if the source set was committed in a previous end-turn.
+     *                       Only committed tiles trigger the rack forbidden overlay.
      */
-    public void attachDragMoveListener(TileActor actor, String sourceArea) {
+    public void attachDragMoveListener(TileActor actor, String sourceArea, boolean isCommittedSet) {
         ScrollPane tableScroll = tableRenderer.getTableScroll();
         boolean isTableSource = "TABLE".equals(sourceArea);
 
         actor.setDragMoveListener(new TileActor.DragMoveListener() {
             @Override
             public void onDragMove(TileActor a, float stageX, float stageY) {
-                if (isTableSource) callback.onTableTileDragStart();
+                // Only show forbidden overlay when dragging a committed table tile
+                if (isTableSource && isCommittedSet) callback.onTableTileDragStart();
 
                 if (stageY < tableY || stageY >= tableY + tableH) {
                     tableRenderer.setHighlightedSetIndex(-1);
@@ -163,7 +173,7 @@ public class TileDragHandler {
             @Override
             public void onDragEnd(TileActor a, float stageX, float stageY) {
                 tableRenderer.setHighlightedSetIndex(-1);
-                if (isTableSource) callback.onTableTileDragEnd();
+                if (isTableSource && isCommittedSet) callback.onTableTileDragEnd();
             }
         });
     }
