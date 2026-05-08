@@ -46,6 +46,12 @@ public class GameStateManager {
     private List<TableSetDto> tableSnapshot = new ArrayList<>();
 
     // -------------------------------------------------------------------------
+    // Rack sorting preference (auto-applies when tiles update)
+    // -------------------------------------------------------------------------
+    public enum RackSortMode { NONE, BY_NUMBER, BY_COLOR }
+    private RackSortMode rackSortMode = RackSortMode.NONE;
+
+    // -------------------------------------------------------------------------
     // Singleton
     // -------------------------------------------------------------------------
 
@@ -105,6 +111,9 @@ public class GameStateManager {
         for (TableSetDto set : this.tableSets) {
             sortTileIds(set);
         }
+
+        // Apply rack sorting preference if set
+        applyRackSortPreference();
     }
 
     // -------------------------------------------------------------------------
@@ -296,6 +305,11 @@ public class GameStateManager {
 
     //Sorts rack tiles by number (descending), then by color (BLACK→RED→BLUE→YELLOW).
     public void sortRackTilesByNumber() {
+        rackSortMode = RackSortMode.BY_NUMBER;
+        sortRackTilesByNumberInternal();
+    }
+
+    private void sortRackTilesByNumberInternal() {
         List<TileDto> jokers = new ArrayList<>();
         List<TileDto> nonJokers = new ArrayList<>();
 
@@ -323,6 +337,11 @@ public class GameStateManager {
     //Sorts rack tiles by color (BLACK→RED→BLUE→YELLOW), then by number (descending).
     //Jokers are always placed at the far right.
     public void sortRackTilesByColor() {
+        rackSortMode = RackSortMode.BY_COLOR;
+        sortRackTilesByColorInternal();
+    }
+
+    private void sortRackTilesByColorInternal() {
         List<TileDto> jokers = new ArrayList<>();
         List<TileDto> nonJokers = new ArrayList<>();
 
@@ -380,6 +399,20 @@ public class GameStateManager {
 
     public List<ParticipantDto> getParticipants() { return participants; }
     public void setParticipants(List<ParticipantDto> participants) { this.participants = participants; }
+
+    public RackSortMode getRackSortMode() { return rackSortMode; }
+    public void setRackSortMode(RackSortMode mode) {
+        this.rackSortMode = mode;
+        applyRackSortPreference();
+    }
+
+    private void applyRackSortPreference() {
+        if (rackSortMode == RackSortMode.BY_NUMBER) {
+            sortRackTilesByNumberInternal();
+        } else if (rackSortMode == RackSortMode.BY_COLOR) {
+            sortRackTilesByColorInternal();
+        }
+    }
 
     /**
      * O(1) lookup of a TileDto by its ID from the tile cache.
