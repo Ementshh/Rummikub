@@ -212,25 +212,69 @@ public class GameStateManager {
     private void sortTileIds(TableSetDto payload) {
         if (payload.tile_ids == null || payload.tile_ids.size() < 2) return;
         
-        payload.tile_ids.sort((idA, idB) -> {
-            TileDto a = getTileById(idA);
-            TileDto b = getTileById(idB);
-            if (a == null || b == null) return 0;
-            
-            // Jokers go to the end
-            if (a.isJoker && !b.isJoker) return 1;
-            if (!a.isJoker && b.isJoker) return -1;
-            if (a.isJoker && b.isJoker) return 0;
-            
-            if ("RUN".equals(payload.set_type)) {
-                return Integer.compare(a.number, b.number);
-            } else {
+        if ("RUN".equals(payload.set_type)) {
+            sortRunTileIds(payload);
+        } else {
+            payload.tile_ids.sort((idA, idB) -> {
+                TileDto a = getTileById(idA);
+                TileDto b = getTileById(idB);
+                if (a == null || b == null) return 0;
+                
+                // Jokers go to the end
+                if (a.isJoker && !b.isJoker) return 1;
+                if (!a.isJoker && b.isJoker) return -1;
+                if (a.isJoker && b.isJoker) return 0;
+                
                 // GROUP: sort by color for consistency
                 return (a.color != null && b.color != null) 
                     ? a.color.compareTo(b.color) 
                     : 0;
+            });
+        }
+    }
+
+    private void sortRunTileIds(TableSetDto payload) {
+        List<Integer> nonJokerIds = new ArrayList<>();
+        List<Integer> jokerIds = new ArrayList<>();
+        for (Integer id : payload.tile_ids) {
+            TileDto t = getTileById(id);
+            if (t != null && t.isJoker) jokerIds.add(id);
+            else if (t != null) nonJokerIds.add(id);
+        }
+
+        if (nonJokerIds.isEmpty()) return; // All jokers
+
+        nonJokerIds.sort((idA, idB) -> Integer.compare(getTileById(idA).number, getTileById(idB).number));
+
+        List<Integer> result = new ArrayList<>();
+        result.add(nonJokerIds.get(0));
+        
+        for (int i = 1; i < nonJokerIds.size(); i++) {
+            int prevNum = getTileById(nonJokerIds.get(i-1)).number;
+            int currNum = getTileById(nonJokerIds.get(i)).number;
+            
+            int gap = currNum - prevNum - 1;
+            while (gap > 0 && !jokerIds.isEmpty()) {
+                result.add(jokerIds.remove(0));
+                gap--;
             }
-        });
+            result.add(nonJokerIds.get(i));
+        }
+        
+        int lastNum = getTileById(result.get(result.size() - 1)).number;
+        int firstNum = getTileById(result.get(0)).number;
+        
+        while (!jokerIds.isEmpty()) {
+            if (lastNum < 13) {
+                result.add(jokerIds.remove(0));
+                lastNum++;
+            } else {
+                result.add(0, jokerIds.remove(0));
+                firstNum--;
+            }
+        }
+        
+        payload.tile_ids = result;
     }
 
     // -------------------------------------------------------------------------
