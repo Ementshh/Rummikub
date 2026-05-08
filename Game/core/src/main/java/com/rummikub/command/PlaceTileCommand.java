@@ -12,18 +12,25 @@ import java.util.List;
  *
  * If {@code toNewSet} is true a brand-new {@link TableSetDto} is created;
  * otherwise the tile is appended to the existing set at {@code targetSetIndex}.
+ *
+ * When creating a new set, if targetSetIndex >= 0, the set is inserted at that
+ * grid position (fixed position layout). If targetSetIndex == -1, the set is
+ * appended at the end.
  */
 public class PlaceTileCommand implements TileCommand {
 
     private final int tileId;
     private final boolean toNewSet;
-    private final int targetSetIndex;   // ignored when toNewSet == true
+    private final int targetSetIndex;   // ignored when toNewSet == true, except for position
     private final String setType;       // "RUN" or "GROUP", only used for new sets
 
     private final GameStateManager gsm = GameStateManager.getInstance();
 
     /** Saved during execute() so undo() can restore the exact TileDto. */
     private TileDto savedTile;
+
+    /** Saved insertion index for undo when creating new set at specific position. */
+    private int actualInsertionIndex = -1;
 
     public PlaceTileCommand(int tileId, boolean toNewSet, int targetSetIndex, String setType) {
         this.tileId         = tileId;
@@ -56,7 +63,15 @@ public class PlaceTileCommand implements TileCommand {
             newSet.isNewThisTurn = true; // set baru = boleh di-detect
             newSet.tile_ids.add(tileId);
             newSet.set_type = gsm.detectSetType(newSet.tile_ids);
-            sets.add(newSet);
+
+            // Insert at specific position if targetSetIndex >= 0, otherwise append
+            if (targetSetIndex >= 0 && targetSetIndex <= sets.size()) {
+                sets.add(targetSetIndex, newSet);
+                actualInsertionIndex = targetSetIndex;
+            } else {
+                sets.add(newSet);
+                actualInsertionIndex = sets.size() - 1;
+            }
         } else {
             TableSetDto target = sets.get(targetSetIndex);
             target.tile_ids.add(tileId);
@@ -74,12 +89,12 @@ public class PlaceTileCommand implements TileCommand {
         List<TableSetDto> sets = gsm.getTableSets();
 
         if (toNewSet) {
-            // The new set was appended last — find and remove it
-            for (int i = sets.size() - 1; i >= 0; i--) {
-                TableSetDto s = sets.get(i);
+            // Remove the set at the actual insertion index
+            if (actualInsertionIndex >= 0 && actualInsertionIndex < sets.size()) {
+                TableSetDto s = sets.get(actualInsertionIndex);
+                // Verify it's the right set (has our tile as only tile)
                 if (s.tile_ids.size() == 1 && s.tile_ids.get(0) == tileId) {
-                    sets.remove(i);
-                    break;
+                    sets.remove(actualInsertionIndex);
                 }
             }
         } else {

@@ -84,11 +84,12 @@ public class TileDragHandler {
                 localDropX += tableScroll.getScrollX();
 
                 int targetSetIndex = tableRenderer.findSetIndexAt(localDropX, localDropY);
+                int targetSlotIndex = tableRenderer.findEmptySlotIndexAt(localDropX, localDropY);
 
                 Gdx.app.log("DROP", "Tile " + actor.getTileData().id
                     + " src=" + sourceArea + " dropStage=(" + dropX + "," + dropY + ")"
                     + " localDrop=(" + localDropX + "," + localDropY + ")"
-                    + " targetBB=" + targetSetIndex);
+                    + " targetSet=" + targetSetIndex + " targetSlot=" + targetSlotIndex);
 
                 if (dropY >= rackY && dropY < rackY + rackH) {
                     if ("TABLE".equals(sourceArea)) {
@@ -111,11 +112,17 @@ public class TileDragHandler {
                                     actor.getTileData().id, false,
                                     targetSetIndex, "RUN");
                             commandHistory.execute(cmd);
-                        } else {
-                            // Create new set
+                        } else if (targetSlotIndex >= 0) {
+                            // Create new set at specific grid position
                             PlaceTileCommand cmd = new PlaceTileCommand(
                                     actor.getTileData().id, true,
-                                    0, "RUN");
+                                    targetSlotIndex, "RUN");
+                            commandHistory.execute(cmd);
+                        } else {
+                            // Create new set at the end
+                            PlaceTileCommand cmd = new PlaceTileCommand(
+                                    actor.getTileData().id, true,
+                                    -1, "RUN");
                             commandHistory.execute(cmd);
                         }
                         callback.refreshTileDisplay();
@@ -125,19 +132,29 @@ public class TileDragHandler {
                                     actor.getTileData().id, sourceSetIndex, targetSetIndex);
                             commandHistory.execute(cmd);
                             callback.refreshTileDisplay();
-                        } else if (targetSetIndex == -1) {
-                            // Moved to empty space — create new set by returning then placing
+                        } else if (targetSlotIndex >= 0) {
+                            // Moved to empty slot — create new set at specific position
                             ReturnTileCommand ret = new ReturnTileCommand(
                                     actor.getTileData().id, sourceSetIndex);
                             commandHistory.execute(ret);
                             PlaceTileCommand place = new PlaceTileCommand(
-                                    actor.getTileData().id, true, 0, "RUN");
+                                    actor.getTileData().id, true, targetSlotIndex, "RUN");
+                            commandHistory.execute(place);
+                            callback.refreshTileDisplay();
+                        } else if (targetSetIndex == -1 && targetSlotIndex == -1) {
+                            // Moved to empty space outside any slot — create new set at end
+                            ReturnTileCommand ret = new ReturnTileCommand(
+                                    actor.getTileData().id, sourceSetIndex);
+                            commandHistory.execute(ret);
+                            PlaceTileCommand place = new PlaceTileCommand(
+                                    actor.getTileData().id, true, -1, "RUN");
                             commandHistory.execute(place);
                             callback.refreshTileDisplay();
                         }
                     }
                 }
                 tableRenderer.setHighlightedSetIndex(-1); // Clear highlight
+                tableRenderer.setHighlightedSlotIndex(-1);
                 return true;
             }
         });
@@ -166,13 +183,18 @@ public class TileDragHandler {
                 }
                 float localX = stageX - tableScroll.getX() + tableScroll.getScrollX();
                 float localY = stageY - tableY;
-                tableRenderer.setHighlightedSetIndex(
-                    tableRenderer.findSetIndexAt(localX, localY));
+
+                int setIndex = tableRenderer.findSetIndexAt(localX, localY);
+                int slotIndex = tableRenderer.findEmptySlotIndexAt(localX, localY);
+
+                tableRenderer.setHighlightedSetIndex(setIndex);
+                tableRenderer.setHighlightedSlotIndex(slotIndex);
             }
 
             @Override
             public void onDragEnd(TileActor a, float stageX, float stageY) {
                 tableRenderer.setHighlightedSetIndex(-1);
+                tableRenderer.setHighlightedSlotIndex(-1);
                 if (isTableSource && isCommittedSet) callback.onTableTileDragEnd();
             }
         });
