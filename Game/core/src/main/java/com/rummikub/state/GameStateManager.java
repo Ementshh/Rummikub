@@ -282,6 +282,71 @@ public class GameStateManager {
         payload.tile_ids = result;
     }
 
+    // Rack sorting
+    private int getColorOrder(String color) {
+        if (color == null) return 4;
+        switch (color) {
+            case "BLACK": return 0;
+            case "RED": return 1;
+            case "BLUE": return 2;
+            case "YELLOW": return 3;
+            default: return 4;
+        }
+    }
+
+    //Sorts rack tiles by number (descending), then by color (BLACK→RED→BLUE→YELLOW).
+    public void sortRackTilesByNumber() {
+        List<TileDto> jokers = new ArrayList<>();
+        List<TileDto> nonJokers = new ArrayList<>();
+
+        for (TileDto tile : myRackTiles) {
+            if (tile.isJoker) {
+                jokers.add(tile);
+            } else {
+                nonJokers.add(tile);
+            }
+        }
+
+        nonJokers.sort((a, b) -> {
+            // Sort by number descending
+            int numCompare = Integer.compare(b.number, a.number);
+            if (numCompare != 0) return numCompare;
+            // sort by color kalo sama
+            return Integer.compare(getColorOrder(a.color), getColorOrder(b.color));
+        });
+
+        myRackTiles.clear();
+        myRackTiles.addAll(nonJokers);
+        myRackTiles.addAll(jokers);
+    }
+
+    //Sorts rack tiles by color (BLACK→RED→BLUE→YELLOW), then by number (descending).
+    //Jokers are always placed at the far right.
+    public void sortRackTilesByColor() {
+        List<TileDto> jokers = new ArrayList<>();
+        List<TileDto> nonJokers = new ArrayList<>();
+
+        for (TileDto tile : myRackTiles) {
+            if (tile.isJoker) {
+                jokers.add(tile);
+            } else {
+                nonJokers.add(tile);
+            }
+        }
+
+        nonJokers.sort((a, b) -> {
+            // Sort by color first
+            int colorCompare = Integer.compare(getColorOrder(a.color), getColorOrder(b.color));
+            if (colorCompare != 0) return colorCompare;
+            // Within same color, sort by number descending
+            return Integer.compare(b.number, a.number);
+        });
+
+        myRackTiles.clear();
+        myRackTiles.addAll(nonJokers);
+        myRackTiles.addAll(jokers);
+    }
+
     // -------------------------------------------------------------------------
     // Getters & setters
     // -------------------------------------------------------------------------

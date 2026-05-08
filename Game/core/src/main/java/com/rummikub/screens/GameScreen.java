@@ -79,6 +79,8 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private TextButton drawButton;
     private TextButton resetButton;
     private TextButton endTurnButton;
+    private TextButton sortByNumberButton;
+    private TextButton sortByColorButton;
     private Label waitingOverlay;
     private Actor rackForbiddenOverlay;
 
@@ -240,9 +242,17 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         resetButton.setDisabled(true);
         endTurnButton.setDisabled(true);
 
+        // Sort buttons
+        sortByNumberButton = makeButton("SORT NUM", new Color(0.25f, 0.35f, 0.50f, 1f));
+        sortByColorButton = makeButton("SORT CLR", new Color(0.45f, 0.30f, 0.50f, 1f));
+        sortByNumberButton.setDisabled(true);
+        sortByColorButton.setDisabled(true);
+
         bar.add(drawButton).width(120).height(44).padRight(12);
         bar.add(resetButton).width(120).height(44).padRight(12);
-        bar.add(endTurnButton).width(140).height(44).padRight(20);
+        bar.add(endTurnButton).width(140).height(44).padRight(12);
+        bar.add(sortByNumberButton).width(100).height(44).padRight(8);
+        bar.add(sortByColorButton).width(100).height(44).padRight(20);
         bar.add(_statusLabel).expandX().left();
 
         stage.addActor(bar);
@@ -263,6 +273,14 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         endTurnButton.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) { onEndTurnClicked(); }
+        });
+        sortByNumberButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) { onSortByNumberClicked(); }
+        });
+        sortByColorButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) { onSortByColorClicked(); }
         });
     }
 
@@ -377,6 +395,8 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         drawButton.setDisabled(!enabled);
         resetButton.setDisabled(!enabled);
         endTurnButton.setDisabled(!enabled);
+        sortByNumberButton.setDisabled(!enabled);
+        sortByColorButton.setDisabled(!enabled);
         waitingOverlay.setVisible(!enabled);
 
         com.badlogic.gdx.scenes.scene2d.Touchable touchable = enabled
@@ -554,6 +574,16 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
                 transitionTo(new MyTurnState());
             }
         });
+    }
+
+    private void onSortByNumberClicked() {
+        gsm.sortRackTilesByNumber();
+        refreshTileDisplay();
+    }
+
+    private void onSortByColorClicked() {
+        gsm.sortRackTilesByColor();
+        refreshTileDisplay();
     }
 
     // -------------------------------------------------------------------------
