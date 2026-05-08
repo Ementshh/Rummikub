@@ -100,6 +100,11 @@ public class GameStateManager {
                 }
             }
         }
+
+        // sort table sets based on their type
+        for (TableSetDto set : this.tableSets) {
+            sortTileIds(set);
+        }
     }
 
     // -------------------------------------------------------------------------
