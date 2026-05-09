@@ -57,3 +57,4 @@ Game/.gradle/w
 *.class
 *.class
 *.yml
+*.log

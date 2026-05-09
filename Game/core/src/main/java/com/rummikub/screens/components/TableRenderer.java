@@ -85,8 +85,6 @@ public class TableRenderer {
         float tileW = Constants.TILE_WIDTH * 0.85f + 2f;
         float tileH = Constants.TILE_HEIGHT * 0.85f;
 
-        // Calculate grid dimensions
-        float colWidth = Math.max(SLOT_VISUAL_WIDTH, tileW * 4 + 10f);
         float rowHeight = SLOT_VISUAL_HEIGHT + 20f;
         float startX = setMargin;
         float startY = tableHeight - 20f;
@@ -95,13 +93,38 @@ public class TableRenderer {
         int requiredCols = Math.max(numCols, (int) Math.ceil((double) sets.size() / GRID_ROWS));
         numCols = Math.max(2, requiredCols);
 
+        // hitung max tiles per kolom supaya lebarnya fleksibel
+        int[] maxTilesPerColumn = new int[numCols];
+        for (int si = 0; si < sets.size(); si++) {
+            int col = si / GRID_ROWS;
+            if (col < numCols) {
+                int tileCount = sets.get(si).tile_ids.size();
+                maxTilesPerColumn[col] = Math.max(maxTilesPerColumn[col], tileCount);
+            }
+        }
+
+        // hitung variable column widths: base 3 tiles + extension for extras
+        float[] colWidths = new float[numCols];
+        for (int c = 0; c < numCols; c++) {
+            int extraTiles = Math.max(0, maxTilesPerColumn[c] - 3);
+            int baseTiles = 3;
+            colWidths[c] = Math.max(SLOT_VISUAL_WIDTH, tileW * (baseTiles + extraTiles) + 10f);
+        }
+
+        // hitung offset X untuk setiap kolom
+        float[] colXOffsets = new float[numCols];
+        colXOffsets[0] = startX;
+        for (int c = 1; c < numCols; c++) {
+            colXOffsets[c] = colXOffsets[c - 1] + colWidths[c - 1];
+        }
+
         // Update table group size for scrolling
-        float totalWidth = startX + numCols * colWidth + setMargin;
+        float totalWidth = colXOffsets[numCols - 1] + colWidths[numCols - 1] + setMargin;
         tableGroup.setSize(totalWidth, tableHeight);
 
         // Render ALL visible slots (including gaps)
         int totalSlots = numCols * GRID_ROWS;
-        renderAllSlots(sets.size(), totalSlots, startX, startY, colWidth, rowHeight, tileH);
+        renderAllSlots(sets.size(), totalSlots, startX, startY, colWidths, rowHeight, tileH);
 
         // Render existing sets (including empty ones as gaps)
         for (int si = 0; si < sets.size(); si++) {
@@ -110,7 +133,7 @@ public class TableRenderer {
             int col = si / GRID_ROWS;
             int row = si % GRID_ROWS;
 
-            float slotX = startX + col * colWidth;
+            float slotX = colXOffsets[col];
             float slotY = startY - (row + 1) * rowHeight + (rowHeight - tileH) / 2f;
 
             // Handle empty sets as gaps (still render slot but no tiles)
@@ -185,25 +208,35 @@ public class TableRenderer {
         }
 
         // Add extra empty slots at the end for new sets
-        addEmptySlotDropZones(sets.size(), numCols, startX, startY, colWidth, rowHeight);
+        addEmptySlotDropZones(sets.size(), numCols, startX, startY, colWidths, rowHeight);
     }
 
     // render visual indikator untuk semua grid slot visible
     private void renderAllSlots(int setCount, int totalSlots, float startX, float startY,
-                                 float colWidth, float rowHeight, float tileH) {
+                                 float[] colWidths, float rowHeight, float tileH) {
+
+        // hitung offset X untuk setiap kolom
+        float[] colXOffsets = new float[colWidths.length];
+        colXOffsets[0] = startX;
+        for (int c = 1; c < colWidths.length; c++) {
+            colXOffsets[c] = colXOffsets[c - 1] + colWidths[c - 1];
+        }
 
         for (int slotIndex = 0; slotIndex < totalSlots; slotIndex++) {
             int col = slotIndex / GRID_ROWS;
             int row = slotIndex % GRID_ROWS;
 
-            float slotX = startX + col * colWidth;
+            if (col >= colWidths.length) continue; // Safety check
+
+            float slotX = colXOffsets[col];
             float slotY = startY - (row + 1) * rowHeight + (rowHeight - tileH) / 2f;
+            float colWidth = colWidths[col];
 
             // Store bounding box for this slot (for hit testing)
             Rectangle slotBB = new Rectangle(
                 slotX - 5f,
                 slotY - 5f,
-                SLOT_VISUAL_WIDTH + 10f,
+                colWidth + 10f,
                 SLOT_VISUAL_HEIGHT + 10f
             );
             emptySlotBoxes.add(slotBB);
@@ -215,18 +248,18 @@ public class TableRenderer {
 
             // Always render slot visual for empty slots
             if (isBeyondSets || (isGap && gsm.getTableSets().get(slotIndex).isEmpty())) {
-                // Semi-transparent slot indicator
+                // slot indicator
                 Image slotBg = new Image(makeColorDrawable(new Color(0.3f, 0.3f, 0.3f, 0.15f)));
-                slotBg.setBounds(slotX, slotY, SLOT_VISUAL_WIDTH, SLOT_VISUAL_HEIGHT);
+                slotBg.setBounds(slotX, slotY, colWidth, SLOT_VISUAL_HEIGHT);
                 tableGroup.addActor(slotBg);
 
                 // Dashed border effect (using thin lines)
                 Image borderTop = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
-                borderTop.setBounds(slotX, slotY + SLOT_VISUAL_HEIGHT - 1, SLOT_VISUAL_WIDTH, 1);
+                borderTop.setBounds(slotX, slotY + SLOT_VISUAL_HEIGHT - 1, colWidth, 1);
                 tableGroup.addActor(borderTop);
 
                 Image borderBottom = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
-                borderBottom.setBounds(slotX, slotY, SLOT_VISUAL_WIDTH, 1);
+                borderBottom.setBounds(slotX, slotY, colWidth, 1);
                 tableGroup.addActor(borderBottom);
 
                 Image borderLeft = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
@@ -234,14 +267,13 @@ public class TableRenderer {
                 tableGroup.addActor(borderLeft);
 
                 Image borderRight = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
-                borderRight.setBounds(slotX + SLOT_VISUAL_WIDTH - 1, slotY, 1, SLOT_VISUAL_HEIGHT);
+                borderRight.setBounds(slotX + colWidth - 1, slotY, 1, SLOT_VISUAL_HEIGHT);
                 tableGroup.addActor(borderRight);
 
-                // Add "+" indicator in center
+                // + sign
                 Label plusLabel = createLabel("+");
-                plusLabel.setFontScale(1.2f);
-                plusLabel.setColor(new Color(0.5f, 0.5f, 0.5f, 0.4f));
-                plusLabel.setPosition(slotX + SLOT_VISUAL_WIDTH / 2f - 8f,
+                plusLabel.setColor(new Color(0.5f, 0.5f, 0.5f, 0.5f));
+                plusLabel.setPosition(slotX + colWidth / 2f - 8f,
                                        slotY + SLOT_VISUAL_HEIGHT / 2f - 10f);
                 tableGroup.addActor(plusLabel);
             }
@@ -252,18 +284,28 @@ public class TableRenderer {
      * Adds drop zones for empty grid slots.
      */
     private void addEmptySlotDropZones(int setCount, int numCols, float startX, float startY,
-                                        float colWidth, float rowHeight) {
+                                        float[] colWidths, float rowHeight) {
         int totalSlots = numCols * GRID_ROWS;
+
+        // hitung offset X untuk setiap kolom
+        float[] colXOffsets = new float[colWidths.length];
+        colXOffsets[0] = startX;
+        for (int c = 1; c < colWidths.length; c++) {
+            colXOffsets[c] = colXOffsets[c - 1] + colWidths[c - 1];
+        }
 
         for (int slotIndex = setCount; slotIndex < totalSlots; slotIndex++) {
             int col = slotIndex / GRID_ROWS;
             int row = slotIndex % GRID_ROWS;
 
-            float slotX = startX + col * colWidth;
+            if (col >= colWidths.length) continue; // Safety check
+
+            float slotX = colXOffsets[col];
             float slotY = startY - (row + 1) * rowHeight + 10f;
+            float colWidth = colWidths[col];
 
             Actor zone = new Actor();
-            zone.setBounds(slotX, slotY, SLOT_VISUAL_WIDTH, SLOT_VISUAL_HEIGHT);
+            zone.setBounds(slotX, slotY, colWidth, SLOT_VISUAL_HEIGHT);
             final int targetSlotIndex = slotIndex;
             zone.addListener(new DragListener() {
                 @Override
