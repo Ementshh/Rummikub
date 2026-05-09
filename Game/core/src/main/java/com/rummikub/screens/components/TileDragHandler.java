@@ -179,6 +179,7 @@ public class TileDragHandler {
 
                 if (stageY < tableY || stageY >= tableY + tableH) {
                     tableRenderer.setHighlightedSetIndex(-1);
+                    tableRenderer.setHighlightedSlotIndex(-1);
                     return;
                 }
                 float localX = stageX - tableScroll.getX() + tableScroll.getScrollX();
