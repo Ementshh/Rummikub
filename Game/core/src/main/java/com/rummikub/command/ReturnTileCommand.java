@@ -40,8 +40,11 @@ public class ReturnTileCommand implements TileCommand {
             savedTile = new TileDto(tileId, "BLACK", 0, false);
         }
 
+
         if (source.tile_ids.isEmpty()) {
-            sets.remove(sourceSetIndex);
+            // Convert to empty placeholder instead of removing
+            source.set_type = null;
+            source.isNewThisTurn = false;
         } else {
             if (source.isNewThisTurn) {
                 source.set_type = gsm.detectSetType(source.tile_ids);
@@ -60,35 +63,34 @@ public class ReturnTileCommand implements TileCommand {
 
         List<TableSetDto> sets = gsm.getTableSets();
 
-        // Re-insert into the original set (if it still exists at that index)
+        // Re-insert into the original set at that index
+        // The set should still exist (as empty placeholder) due to gap-preserving logic
         if (sourceSetIndex < sets.size()) {
             TableSetDto target = sets.get(sourceSetIndex);
             target.tile_ids.add(tileId);
-            if (target.isNewThisTurn) {
-                target.set_type = gsm.detectSetType(target.tile_ids);
-            }
+            target.isNewThisTurn = true;
+            target.set_type = gsm.detectSetType(target.tile_ids);
         } else {
-            // Set was removed when it became empty — recreate it
+            // Fallback: recreate at position if somehow missing
             TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
             restored.isNewThisTurn = true;
             restored.tile_ids.add(tileId);
             restored.set_type = gsm.detectSetType(restored.tile_ids);
-            sets.add(sourceSetIndex, restored);
+            // Fill gaps if needed
+            while (sets.size() < sourceSetIndex) {
+                sets.add(TableSetDto.createEmpty());
+            }
+            if (sourceSetIndex < sets.size()) {
+                sets.set(sourceSetIndex, restored);
+            } else {
+                sets.add(restored);
+            }
         }
 
         savedTile = null;
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
-    /**
-     * Searches the rack for a TileDto with the given id.
-     * (The tile has already been removed from the table set at this point,
-     * but it hasn't been added to the rack yet, so we look in the rack snapshot
-     * via the state manager's current rack list before the add.)
-     */
     private TileDto findTileDto(int id) {
         // O(1) lookup from tile cache (includes rack + table tiles)
         TileDto cached = gsm.getTileById(id);

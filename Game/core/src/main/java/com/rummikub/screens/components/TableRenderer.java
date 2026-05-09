@@ -47,6 +47,8 @@ public class TableRenderer {
     private int highlightedSetIndex = -1;
     private int highlightedSlotIndex = -1;
 
+    private int numCols = 2;
+
     public TableRenderer(Group tableGroup, ScrollPane tableScroll,
                          GameStateManager gsm, SetValidator setValidator,
                          float tableHeight) {
@@ -57,10 +59,18 @@ public class TableRenderer {
         this.tableHeight = tableHeight;
     }
 
+    // Set banyak kolom yang akan dirender
+    public void setNumColumns(int numCols) {
+        this.numCols = Math.max(2, numCols);
+    }
+
+    public int getNumColumns() {
+        return numCols;
+    }
+
     public void rebuild(TileDragHandler dragHandler) {
         if (tableGroup == null) return;
 
-        // Dispose old actors
         for (Actor a : tableGroup.getChildren()) {
             if (a instanceof TileActor) ((TileActor) a).dispose();
         }
@@ -81,17 +91,19 @@ public class TableRenderer {
         float startX = setMargin;
         float startY = tableHeight - 20f;
 
-        // Calculate how many columns needed (4 rows per column)
-        int numCols = Math.max(2, (sets.size() + GRID_ROWS - 1) / GRID_ROWS + 1);
+        //  pastikan cukup kolom untuk set
+        int requiredCols = Math.max(numCols, (int) Math.ceil((double) sets.size() / GRID_ROWS));
+        numCols = Math.max(2, requiredCols);
 
         // Update table group size for scrolling
         float totalWidth = startX + numCols * colWidth + setMargin;
         tableGroup.setSize(totalWidth, tableHeight);
 
-        // Render empty slot indicators first (so they appear behind tiles)
-        renderEmptySlots(sets.size(), numCols, startX, startY, colWidth, rowHeight, tileH);
+        // Render ALL visible slots (including gaps)
+        int totalSlots = numCols * GRID_ROWS;
+        renderAllSlots(sets.size(), totalSlots, startX, startY, colWidth, rowHeight, tileH);
 
-        // Render existing sets
+        // Render existing sets (including empty ones as gaps)
         for (int si = 0; si < sets.size(); si++) {
             TableSetDto set = sets.get(si);
 
@@ -101,9 +113,10 @@ public class TableRenderer {
             float slotX = startX + col * colWidth;
             float slotY = startY - (row + 1) * rowHeight + (rowHeight - tileH) / 2f;
 
-            if (set.tile_ids == null || set.tile_ids.isEmpty()) {
-                Gdx.app.log("TableRenderer", "set " + si + " is empty, at col=" + col + " row=" + row);
-                setBoundingBoxes.add(new Rectangle(slotX, slotY, 0, 0));
+            // Handle empty sets as gaps (still render slot but no tiles)
+            if (set == null || set.isEmpty()) {
+                Gdx.app.log("TableRenderer", "set " + si + " is empty/gap, at col=" + col + " row=" + row);
+                setBoundingBoxes.add(new Rectangle(0, 0, 0, 0));
                 continue;
             }
 
@@ -175,10 +188,9 @@ public class TableRenderer {
         addEmptySlotDropZones(sets.size(), numCols, startX, startY, colWidth, rowHeight);
     }
 
-    //Renders visual indicators for empty grid slots.
-    private void renderEmptySlots(int setCount, int numCols, float startX, float startY,
-                                   float colWidth, float rowHeight, float tileH) {
-        int totalSlots = numCols * GRID_ROWS;
+    // render visual indikator untuk semua grid slot visible
+    private void renderAllSlots(int setCount, int totalSlots, float startX, float startY,
+                                 float colWidth, float rowHeight, float tileH) {
 
         for (int slotIndex = 0; slotIndex < totalSlots; slotIndex++) {
             int col = slotIndex / GRID_ROWS;
@@ -196,8 +208,13 @@ public class TableRenderer {
             );
             emptySlotBoxes.add(slotBB);
 
-            // Only render visual for empty slots (beyond current sets)
-            if (slotIndex >= setCount) {
+            // Render visual for ALL slots (both empty gaps and available slots)
+            // Empty slots beyond current sets or existing gaps get rendered
+            boolean isGap = slotIndex < setCount;
+            boolean isBeyondSets = slotIndex >= setCount;
+
+            // Always render slot visual for empty slots
+            if (isBeyondSets || (isGap && gsm.getTableSets().get(slotIndex).isEmpty())) {
                 // Semi-transparent slot indicator
                 Image slotBg = new Image(makeColorDrawable(new Color(0.3f, 0.3f, 0.3f, 0.15f)));
                 slotBg.setBounds(slotX, slotY, SLOT_VISUAL_WIDTH, SLOT_VISUAL_HEIGHT);

@@ -18,4 +18,16 @@ public class TableSetDto {
         this.set_type = set_type;
         this.tile_ids = tile_ids != null ? tile_ids : new ArrayList<>();
     }
+
+    // true jika setnya empty
+    public boolean isEmpty() {
+        return tile_ids == null || tile_ids.isEmpty();
+    }
+
+    // buat set kosong untuk gap di grid
+    public static TableSetDto createEmpty() {
+        TableSetDto empty = new TableSetDto(null, new ArrayList<>());
+        empty.isNewThisTurn = false;
+        return empty;
+    }
 }

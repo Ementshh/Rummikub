@@ -1,7 +1,9 @@
 package com.rummikub.state;
 
+import com.rummikub.grid.TableGridManager;
 import com.rummikub.network.NetworkManager;
 import com.rummikub.network.dto.*;
+import com.rummikub.screens.components.SetValidator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,6 +54,11 @@ public class GameStateManager {
     private RackSortMode rackSortMode = RackSortMode.NONE;
 
     // -------------------------------------------------------------------------
+    // Table grid layout manager
+    // -------------------------------------------------------------------------
+    private transient TableGridManager gridManager;
+
+    // -------------------------------------------------------------------------
     // Singleton
     // -------------------------------------------------------------------------
 
@@ -64,6 +71,41 @@ public class GameStateManager {
         return instance;
     }
 
+    /**
+     * Gets or creates the TableGridManager. Must be called after SetValidator is available.
+     */
+    public TableGridManager getGridManager(SetValidator validator) {
+        if (gridManager == null) {
+            gridManager = new TableGridManager(this, validator);
+        }
+        return gridManager;
+    }
+
+    /**
+     * Returns the current grid manager if initialized.
+     */
+    public TableGridManager getGridManager() {
+        return gridManager;
+    }
+
+    /**
+     * Notifies the grid manager to check for expansion.
+     * Should be called after any tile placement.
+     */
+    public void notifyTilePlacement(SetValidator validator) {
+        if (gridManager == null) {
+            gridManager = new TableGridManager(this, validator);
+        }
+        gridManager.checkAndExpandGrid();
+    }
+
+    /**
+     * Returns the number of columns in the grid.
+     */
+    public int getGridColumns() {
+        return gridManager != null ? gridManager.getNumColumns() : 2;
+    }
+
     // -------------------------------------------------------------------------
     // Server sync
     // -------------------------------------------------------------------------
@@ -72,7 +114,7 @@ public class GameStateManager {
      * Overwrites all local state with fresh data from the server response.
      * Call this after every successful poll.
      */
-    public void loadFromServer(GameStateResponse.GameData data) {
+    public void loadFromServer(GameStateResponse.GameData data, SetValidator validator) {
         if (data == null) return;
 
         this.gameId = data.id;
@@ -85,6 +127,12 @@ public class GameStateManager {
         this.tableSets = data.tableSets != null ? new ArrayList<>(data.tableSets) : new ArrayList<>();
         this.participants = data.participants != null ? new ArrayList<>(data.participants) : new ArrayList<>();
         this.turnStartedAt = (data.turnStartedAt != null) ? data.turnStartedAt : 0L;
+
+        // Initialize or reset grid manager
+        if (gridManager == null) {
+            gridManager = new TableGridManager(this, validator);
+        }
+        gridManager.ensureColumnsForExistingSets();
 
         // Rebuild tile cache for O(1) lookup by ID
         if (tileCache == null) tileCache = new HashMap<>();
@@ -127,6 +175,10 @@ public class GameStateManager {
     public void takeSnapshot() {
         rackSnapshot = deepCopyRack(myRackTiles);
         tableSnapshot = deepCopyTable(tableSets);
+        // Reset grid manager when starting fresh turn
+        if (gridManager != null) {
+            gridManager.reset();
+        }
     }
 
     /**

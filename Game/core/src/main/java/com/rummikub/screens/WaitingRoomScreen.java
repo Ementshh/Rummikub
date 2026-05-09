@@ -11,6 +11,7 @@ import com.rummikub.network.GameApiFacade;
 import com.rummikub.network.dto.GameStateResponse;
 import com.rummikub.network.dto.GenericResponse;
 import com.rummikub.network.dto.ParticipantDto;
+import com.rummikub.screens.components.SetValidator;
 import com.rummikub.state.GameStateManager;
 
 import java.util.ArrayList;
@@ -135,7 +136,8 @@ public class WaitingRoomScreen extends BaseScreen {
 
                 // Game already started (e.g., host started from another client)
                 if ("IN_PROGRESS".equals(r.data.status)) {
-                    GameStateManager.getInstance().loadFromServer(r.data);
+                    GameStateManager gsm = GameStateManager.getInstance();
+                    gsm.loadFromServer(r.data, new SetValidator(gsm));
                     game.setScreen(new GameScreen(game, gameId));
                     return;
                 }
@@ -195,7 +197,8 @@ public class WaitingRoomScreen extends BaseScreen {
                         @Override
                         public void onSuccess(GameStateResponse gs) {
                             if (gs != null && gs.success && gs.data != null) {
-                                GameStateManager.getInstance().loadFromServer(gs.data);
+                                GameStateManager gsm = GameStateManager.getInstance();
+                                gsm.loadFromServer(gs.data, new SetValidator(gsm));
                             }
                             game.setScreen(new GameScreen(game, gameId));
                         }

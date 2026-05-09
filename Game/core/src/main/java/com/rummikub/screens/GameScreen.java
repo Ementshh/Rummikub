@@ -419,12 +419,12 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
                 if (r == null || !r.success || r.data == null) return;
 
                 if ("FINISHED".equals(r.data.status)) {
-                    gsm.loadFromServer(r.data);
+                    gsm.loadFromServer(r.data, setValidator);
                     transitionTo(new GameOverState());
                     return;
                 }
 
-                gsm.loadFromServer(r.data);
+                gsm.loadFromServer(r.data, setValidator);
 
                 // BUG 2 DEBUG
                 Gdx.app.log("DEBUG_TURN", "currentTurnUserId dari server: " + r.data.currentTurnUserId);
@@ -594,8 +594,14 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
      * Rebuilds all tile actors from the current GameStateManager state.
      * Orchestrates calls to the component renderers and HUD manager.
      * Always re-applies the correct Touchable state to newly created actors.
+     * Also syncs TableRenderer columns with TableGridManager.
      */
     public void refreshTileDisplay() {
+        // Check grid expansion after tile placement
+        gsm.notifyTilePlacement(setValidator);
+        // Sync TableRenderer columns with GridManager
+        tableRenderer.setNumColumns(gsm.getGridColumns());
+
         rebuildRackDisplay();
         tableRenderer.rebuild(dragHandler);
         hudManager.updateTurnInfo();

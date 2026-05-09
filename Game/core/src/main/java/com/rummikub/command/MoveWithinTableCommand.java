@@ -34,12 +34,12 @@ public class MoveWithinTableCommand implements TileCommand {
 
         sourceSetRemoved = source.tile_ids.isEmpty();
         if (sourceSetRemoved) {
-            sets.remove(sourceSetIndex);
-            // If source was before target, the target index shifts down by one
-            int adjustedTarget = targetSetIndex > sourceSetIndex
-                    ? targetSetIndex - 1
-                    : targetSetIndex;
-            TableSetDto target = sets.get(adjustedTarget);
+            // Keep empty set as gap placeholder instead of removing
+            source.set_type = null;
+            source.isNewThisTurn = false;
+
+            // Target index unchanged since we didn't remove the source
+            TableSetDto target = sets.get(targetSetIndex);
             target.tile_ids.add(tileId);
             if (target.isNewThisTurn) {
                 target.set_type = gsm.detectSetType(target.tile_ids);
@@ -60,28 +60,22 @@ public class MoveWithinTableCommand implements TileCommand {
     public void undo() {
         List<TableSetDto> sets = gsm.getTableSets();
 
-        // Determine the actual current index of the target set
-        int currentTarget = (sourceSetRemoved && targetSetIndex > sourceSetIndex)
-                ? targetSetIndex - 1
-                : targetSetIndex;
-
-        TableSetDto target = sets.get(currentTarget);
+        // Target index unchanged since we preserve gaps
+        TableSetDto target = sets.get(targetSetIndex);
         target.tile_ids.remove(Integer.valueOf(tileId));
         if (!target.tile_ids.isEmpty()) {
             if (target.isNewThisTurn) {
                 target.set_type = gsm.detectSetType(target.tile_ids);
             }
-        } else {
-            sets.remove(currentTarget);
         }
+        // Note: we don't remove empty target sets to preserve grid positions
 
         if (sourceSetRemoved) {
-            // Recreate the source set with just this tile
-            TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
-            restored.isNewThisTurn = true; // assume new if it was removed? actually ambiguous, but safe
-            restored.tile_ids.add(tileId);
-            restored.set_type = gsm.detectSetType(restored.tile_ids);
-            sets.add(sourceSetIndex, restored);
+            // Restore tile to the empty source set (gap)
+            TableSetDto src = sets.get(sourceSetIndex);
+            src.tile_ids.add(tileId);
+            src.isNewThisTurn = true;
+            src.set_type = gsm.detectSetType(src.tile_ids);
         } else {
             TableSetDto src = sets.get(sourceSetIndex);
             src.tile_ids.add(tileId);
