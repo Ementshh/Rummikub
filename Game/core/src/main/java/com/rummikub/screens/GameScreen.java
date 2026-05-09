@@ -532,9 +532,11 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
             }
         }
 
-        // Validasi struktural umum: setiap set minimal 3 tile
+        // setiap set minimal 3 tile (skip empty gaps)
         for (int i = 0; i < sets.size(); i++) {
-            if (sets.get(i).tile_ids.size() < 3) {
+            TableSetDto set = sets.get(i);
+            if (set.isEmpty()) continue;  // Skip gap
+            if (set.tile_ids.size() < 3) {
                 hudManager.showStatusMessage("Set #" + (i + 1) + " belum lengkap (min 3 tile)!");
                 return;
             }
