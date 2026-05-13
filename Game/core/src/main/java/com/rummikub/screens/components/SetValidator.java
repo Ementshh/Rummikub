@@ -62,11 +62,21 @@ public class SetValidator {
 
         // Sort by number and check sequence with joker gaps
         nonJokers.sort((a, b) -> Integer.compare(a.number, b.number));
+
+        // cek duplicate
+        for (int i = 1; i < nonJokers.size(); i++) {
+            if (nonJokers.get(i).number == nonJokers.get(i-1).number) {
+                return false;
+            }
+        }
+
         int startNum = nonJokers.get(0).number;
         int endNum = nonJokers.get(nonJokers.size() - 1).number;
         int expectedLength = endNum - startNum + 1;
-        if (expectedLength != nonJokers.size() + jokerCount) return false;
-        if (startNum < 1 || endNum > 13) return false;
+        
+        if (expectedLength > nonJokers.size() + jokerCount) return false;
+        
+        if (nonJokers.size() + jokerCount > 13) return false;
 
         return true;
     }
