@@ -3,8 +3,6 @@ package com.rummikub.screens.components;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.rummikub.network.NetworkManager;
-import com.rummikub.network.dto.ParticipantDto;
 import com.rummikub.network.dto.TableSetDto;
 import com.rummikub.network.dto.TileDto;
 import com.rummikub.state.GameStateManager;
@@ -41,22 +39,14 @@ public class GameHudManager {
 
     /** Updates the turn info and opponent name labels. */
     public void updateTurnInfo() {
-        String localUser = NetworkManager.getInstance().getCurrentUsername();
-
-        // Update opponent name label — first participant that isn't us
-        for (ParticipantDto p : gsm.getParticipants()) {
-            if (!p.username.equals(localUser)) {
-                opponentNameLabel.setText(p.username);
-                break;
-            }
-        }
+        // Username resolution kasih ke gamestatemanager
+        opponentNameLabel.setText(gsm.resolveOpponentUsername());
 
         if (gsm.isMyTurn()) {
             turnInfoLabel.setText("GILIRAN: KAMU");
             turnInfoLabel.setColor(Color.GREEN);
         } else {
-            String currentId = gsm.getCurrentTurnUserId();
-            String name = resolveUsername(currentId);
+            String name = gsm.resolveCurrentTurnUsername();
             turnInfoLabel.setText("GILIRAN: " + name.toUpperCase());
             turnInfoLabel.setColor(Color.LIGHT_GRAY);
         }
@@ -101,13 +91,5 @@ public class GameHudManager {
     public void showStatusMessage(String msg) {
         statusLabel.setText(msg);
         Gdx.app.log("GameScreen", "Status: " + msg);
-    }
-
-    private String resolveUsername(String userId) {
-        if (userId == null) return "?";
-        for (ParticipantDto p : gsm.getParticipants()) {
-            if (userId.equals(p.userId)) return p.username;
-        }
-        return userId;
     }
 }

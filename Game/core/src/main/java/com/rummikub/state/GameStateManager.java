@@ -5,6 +5,8 @@ import com.rummikub.network.NetworkManager;
 import com.rummikub.network.dto.*;
 import com.rummikub.screens.components.SetValidator;
 
+import com.badlogic.gdx.Gdx;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -208,6 +210,49 @@ public class GameStateManager {
         String myId = NetworkManager.getInstance().getUserId();
         if (myId == null || currentTurnUserId == null) return false;
         return currentTurnUserId.trim().equalsIgnoreCase(myId.trim());
+    }
+
+    
+    public String resolveCurrentTurnUsername() {
+        if (currentTurnUserId == null) return "?";
+
+        // Primary: exact userId match
+        for (ParticipantDto p : participants) {
+            if (p.userId != null && currentTurnUserId.equals(p.userId)) {
+                return p.username;
+            }
+        }
+
+        // Secondary: case-insensitive/trimmed match (same tolerance as isMyTurn)
+        String trimmedId = currentTurnUserId.trim();
+        for (ParticipantDto p : participants) {
+            if (p.userId != null && trimmedId.equalsIgnoreCase(p.userId.trim())) {
+                Gdx.app.log("GSM", "resolveCurrentTurnUsername: "
+                    + "matched via case-insensitive fallback -> " + p.username);
+                return p.username;
+            }
+        }
+
+        // No match found, log diagnostics for debuggingg
+        Gdx.app.log("GSM", "resolveCurrentTurnUsername: no match for "
+            + "currentTurnUserId=" + currentTurnUserId
+            + " among " + participants.size() + " participants");
+        for (ParticipantDto p : participants) {
+            Gdx.app.log("GSM", "  participant: userId=" + p.userId
+                + " username=" + p.username);
+        }
+        return "?";
+    }
+
+
+    public String resolveOpponentUsername() {
+        String localUser = NetworkManager.getInstance().getCurrentUsername();
+        for (ParticipantDto p : participants) {
+            if (p.username != null && !p.username.equals(localUser)) {
+                return p.username;
+            }
+        }
+        return "?";
     }
 
     public String detectSetType(List<Integer> tile_ids) {

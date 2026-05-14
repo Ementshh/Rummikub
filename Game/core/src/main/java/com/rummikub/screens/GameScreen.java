@@ -147,17 +147,9 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         header.setBackground(makeColorDrawable(new Color(0.08f, 0.14f, 0.08f, 1f)));
         header.left().pad(10);
 
-        // Resolve opponent name from participants at build time (may be empty until first poll)
-        String opponentName = "";
+        // Show the local player's own username in the top-left
         String localUser = NetworkManager.getInstance().getCurrentUsername();
-        for (ParticipantDto p : gsm.getParticipants()) {
-            if (localUser == null || !localUser.equals(p.username)) {
-                opponentName = p.username;
-                break;
-            }
-        }
-
-        Label opponentNameLabel = makeLabel(opponentName);
+        Label opponentNameLabel = makeLabel(localUser != null ? localUser : "Pemain");
         Label turnInfoLabel  = makeLabel("Giliran: ...");
         Label timerLabel = makeLabel("TIMER: --:--");
         timerLabel.setColor(Color.YELLOW);
