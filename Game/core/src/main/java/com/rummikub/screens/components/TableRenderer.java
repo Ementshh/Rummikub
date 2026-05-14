@@ -192,17 +192,18 @@ public class TableRenderer {
                     continue;
                 }
 
-                TileRenderStrategy strategy = new TableTileStrategy();
-                // Apply LockedTileStrategy (dark border, but now draggable) to all committed tiles
-                if (!set.isNewThisTurn) {
-                    strategy = new LockedTileStrategy();
-                }
+                // Tile cuman di commit jika set udah di commit sebelumnya dan tilenya tidak di place dari rack di turn ini
+                boolean isTileCommitted = !set.isNewThisTurn && !gsm.isTilePlacedThisTurn(tileId);
+
+                TileRenderStrategy strategy = isTileCommitted
+                    ? new LockedTileStrategy()   // dark border = committed, cannot return to rack
+                    : new TableTileStrategy();    // cyan highlight = returnable to rack
+
                 TileActor actor = TileActorFactory.create(dto, strategy);
                 actor.setPosition(slotX + ti * tileW, slotY);
                 final int setIndex = si;
-                boolean isCommitted = !set.isNewThisTurn;
-                dragHandler.attachDropListener(actor, "TABLE", setIndex, isCommitted);
-                dragHandler.attachDragMoveListener(actor, "TABLE", isCommitted);
+                dragHandler.attachDropListener(actor, "TABLE", setIndex, isTileCommitted);
+                dragHandler.attachDragMoveListener(actor, "TABLE", isTileCommitted);
                 tableGroup.addActor(actor);
             }
         }

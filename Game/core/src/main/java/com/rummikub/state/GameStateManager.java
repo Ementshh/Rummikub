@@ -7,8 +7,10 @@ import com.rummikub.screens.components.SetValidator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +42,9 @@ public class GameStateManager {
 
     // O(1) lookup cache: tile ID → TileDto (populated from myRackTiles on each server sync)
     private Map<Integer, TileDto> tileCache = new HashMap<>();
+
+    // Track tile id apa di taro di turn ini atau ga
+    private Set<Integer> tilesPlacedThisTurn = new HashSet<>();
 
     // -------------------------------------------------------------------------
     // Snapshot (taken at the start of each turn for undo/reset)
@@ -175,6 +180,7 @@ public class GameStateManager {
     public void takeSnapshot() {
         rackSnapshot = deepCopyRack(myRackTiles);
         tableSnapshot = deepCopyTable(tableSets);
+        tilesPlacedThisTurn.clear();
         // Reset grid manager when starting fresh turn
         if (gridManager != null) {
             gridManager.reset();
@@ -188,6 +194,7 @@ public class GameStateManager {
     public void resetToSnapshot() {
         myRackTiles = deepCopyRack(rackSnapshot);
         tableSets = deepCopyTable(tableSnapshot);
+        tilesPlacedThisTurn.clear();
     }
 
     // -------------------------------------------------------------------------
@@ -474,6 +481,25 @@ public class GameStateManager {
      */
     public TileDto getTileById(int id) {
         return tileCache.get(id);
+    }
+
+    // Per-tile origin tracking (placed-this-turn)
+
+    // Mark tile yang ditaro dari rack ke table di turn ini. TIle di set ini bisa dibalikin ke rack
+    public void addPlacedTile(int tileId) {
+        tilesPlacedThisTurn.add(tileId);
+    }
+
+
+    // Remove tile dari tracking placed this turn
+    public void removePlacedTile(int tileId) {
+        tilesPlacedThisTurn.remove(tileId);
+    }
+
+
+    // True jika tilenya ditaro dari rack ke meja di turn ini.
+    public boolean isTilePlacedThisTurn(int tileId) {
+        return tilesPlacedThisTurn.contains(tileId);
     }
 
     // -------------------------------------------------------------------------

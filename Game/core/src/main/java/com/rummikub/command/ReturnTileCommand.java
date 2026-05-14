@@ -51,6 +51,7 @@ public class ReturnTileCommand implements TileCommand {
             }
         }
 
+        gsm.removePlacedTile(tileId);
         gsm.getMyRackTiles().add(savedTile);
     }
 
@@ -70,12 +71,14 @@ public class ReturnTileCommand implements TileCommand {
             target.tile_ids.add(tileId);
             target.isNewThisTurn = true;
             target.set_type = gsm.detectSetType(target.tile_ids);
+            gsm.addPlacedTile(tileId);
         } else {
             // Fallback: recreate at position if somehow missing
             TableSetDto restored = new TableSetDto("RUN", new java.util.ArrayList<>());
             restored.isNewThisTurn = true;
             restored.tile_ids.add(tileId);
             restored.set_type = gsm.detectSetType(restored.tile_ids);
+            gsm.addPlacedTile(tileId);
             // Fill gaps if needed
             while (sets.size() < sourceSetIndex) {
                 sets.add(TableSetDto.createEmpty());

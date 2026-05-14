@@ -56,6 +56,9 @@ public class PlaceTileCommand implements TileCommand {
         savedTile = found;
         rack.remove(found);
 
+        // Track apa tile ini diplace dari rack di turn ini
+        gsm.addPlacedTile(tileId);
+
         List<TableSetDto> sets = gsm.getTableSets();
 
         if (toNewSet) {
@@ -144,6 +147,7 @@ public class PlaceTileCommand implements TileCommand {
         }
 
         gsm.getMyRackTiles().add(savedTile);
+        gsm.removePlacedTile(tileId);
         savedTile = null;
     }
 }
