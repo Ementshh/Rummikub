@@ -8,4 +8,12 @@ public interface GameScreenState {
     void enter(GameScreen screen);
     void update(GameScreen screen, float delta);
     void exit(GameScreen screen);
+
+    default boolean canInteractWithRack() { return false; }
+
+    default boolean canInteractWithTable() { return false; }
+
+    default boolean canSortRack() { return false; }
+
+    default boolean canUseGameActions() { return false; }
 }

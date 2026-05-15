@@ -12,7 +12,7 @@ public class SubmittingState implements GameScreenState {
 
     @Override
     public void enter(GameScreen screen) {
-        screen.setControlsEnabled(false);
+        screen.applyStatePermissions();
         Gdx.app.log("SubmittingState", "Showing loading overlay");
         // TODO: show loading overlay actor on screen
     }

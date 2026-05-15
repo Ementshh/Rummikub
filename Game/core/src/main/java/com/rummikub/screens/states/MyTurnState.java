@@ -4,17 +4,17 @@ import com.rummikub.screens.GameScreen;
 import com.rummikub.screens.GameScreenState;
 import com.rummikub.state.GameStateManager;
 
-/**
- * [STATE] — Active while it is this player's turn.
- * Enables controls, takes a snapshot for undo, and counts down a 120-second timer.
- */
+
+// [STATE] — Active while it is this player's turn.
+// Enables all controls, takes a snapshot for undo, and counts down a 120-second timer.
+
 public class MyTurnState implements GameScreenState {
 
     private float turnTimer = 120f;
 
     @Override
     public void enter(GameScreen screen) {
-        screen.setControlsEnabled(true);
+        screen.applyStatePermissions();
         GameStateManager.getInstance().takeSnapshot();
     }
 
@@ -31,4 +31,9 @@ public class MyTurnState implements GameScreenState {
     public void exit(GameScreen screen) {
         turnTimer = 120f;
     }
+
+    @Override public boolean canInteractWithRack()  { return true; }
+    @Override public boolean canInteractWithTable() { return true; }
+    @Override public boolean canSortRack()           { return true; }
+    @Override public boolean canUseGameActions()     { return true; }
 }

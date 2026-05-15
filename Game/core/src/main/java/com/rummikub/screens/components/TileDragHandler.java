@@ -9,7 +9,6 @@ import com.rummikub.command.MoveWithinTableCommand;
 import com.rummikub.command.PlaceTileCommand;
 import com.rummikub.command.ReturnTileCommand;
 import com.rummikub.network.dto.TableSetDto;
-import com.rummikub.screens.states.MyTurnState;
 import com.rummikub.screens.GameScreenState;
 import com.rummikub.state.GameStateManager;
 
@@ -71,7 +70,9 @@ public class TileDragHandler {
             @Override
             public boolean handle(com.badlogic.gdx.scenes.scene2d.Event event) {
                 if (!(event instanceof TileDropEvent)) return false;
-                if (!(callback.getCurrentState() instanceof MyTurnState)) return false;
+
+                GameScreenState state = callback.getCurrentState();
+                if (state == null) return false;
 
                 TileDropEvent drop = (TileDropEvent) event;
                 float dropX = drop.dropX;
@@ -92,7 +93,10 @@ public class TileDragHandler {
                     + " targetSet=" + targetSetIndex + " targetSlot=" + targetSlotIndex);
 
                 if (dropY >= rackY && dropY < rackY + rackH) {
+                    // Dropped onto rack area
                     if ("TABLE".equals(sourceArea)) {
+                        // Table→Rack: requires table interaction permission
+                        if (!state.canInteractWithTable()) return false;
                         if (isCommittedSet) {
                             callback.showStatusMessage("Set lama tidak bisa dikembalikan ke rack!");
                         } else {
@@ -103,8 +107,16 @@ public class TileDragHandler {
                         }
                         return true;
                     }
+                    if ("RACK".equals(sourceArea) && state.canInteractWithRack()) {
+                        // Rack ke Rack: reorder tiles dalam rack
+                        reorderRackTile(actor, dropX);
+                        callback.refreshTileDisplay();
+                        return true;
+                    }
                 } else if (dropY >= tableY && dropY < tableY + tableH) {
-                    // Dropped onto table area
+                    // Drop ke table, butuh permission table interaction
+                    if (!state.canInteractWithTable()) return false;
+
                     if ("RACK".equals(sourceArea)) {
                         if (targetSetIndex >= 0) {
                             // Join existing set
@@ -158,6 +170,35 @@ public class TileDragHandler {
                 return true;
             }
         });
+    }
+
+
+    // Reorder tile dalam rack berdasarkan dia di drop horizontally
+    private void reorderRackTile(TileActor actor, float dropX) {
+        int tileId = actor.getTileData().id;
+        java.util.List<com.rummikub.network.dto.TileDto> rack = gsm.getMyRackTiles();
+
+        // Find current index
+        int currentIndex = -1;
+        for (int i = 0; i < rack.size(); i++) {
+            if (rack.get(i).id == tileId) {
+                currentIndex = i;
+                break;
+            }
+        }
+        if (currentIndex == -1) return;
+
+        // Calculate target index dari drop position
+        float tileW = com.rummikub.utils.Constants.TILE_WIDTH + 4f;
+        float startX = 10f;
+        int targetIndex = (int) ((dropX - startX + tileW / 2f) / tileW);
+        targetIndex = Math.max(0, Math.min(targetIndex, rack.size() - 1));
+
+        if (targetIndex == currentIndex) return;
+
+        // Reorder: remove from current position and insert at target
+        com.rummikub.network.dto.TileDto tile = rack.remove(currentIndex);
+        rack.add(targetIndex, tile);
     }
 
     /**

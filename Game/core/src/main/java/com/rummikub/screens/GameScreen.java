@@ -382,24 +382,40 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     // State callbacks (called by state objects)
     // -------------------------------------------------------------------------
 
-    /** Enables or disables interactive controls based on whose turn it is. */
-    public void setControlsEnabled(boolean enabled) {
-        drawButton.setDisabled(!enabled);
-        resetButton.setDisabled(!enabled);
-        endTurnButton.setDisabled(!enabled);
-        sortByNumberButton.setDisabled(!enabled);
-        sortByColorButton.setDisabled(!enabled);
-        waitingOverlay.setVisible(!enabled);
+    
+    // Atur control berdasarkan statenya bisa apa
+    // Setiap state atur dia boleh ngapain aja
+    public void applyStatePermissions() {
+        if (currentState == null) return;
 
-        com.badlogic.gdx.scenes.scene2d.Touchable touchable = enabled
+        // Game-action buttons: enable klo statenya boleh game actions
+        boolean gameActions = currentState.canUseGameActions();
+        drawButton.setDisabled(!gameActions);
+        resetButton.setDisabled(!gameActions);
+        endTurnButton.setDisabled(!gameActions);
+
+        // Sort buttons: enable kalo state boleh sorting
+        boolean canSort = currentState.canSortRack();
+        sortByNumberButton.setDisabled(!canSort);
+        sortByColorButton.setDisabled(!canSort);
+
+        // Waiting overlay
+        waitingOverlay.setVisible(!gameActions);
+
+        // Rack tiles
+        com.badlogic.gdx.scenes.scene2d.Touchable rackTouchable = currentState.canInteractWithRack()
                 ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
                 : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
-
         for (Actor a : rackGroup.getChildren()) {
-            a.setTouchable(touchable);
+            a.setTouchable(rackTouchable);
         }
+
+        // Table tiles: touchable klo statenya boleh table interaction
+        com.badlogic.gdx.scenes.scene2d.Touchable tableTouchable = currentState.canInteractWithTable()
+                ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
+                : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
         for (Actor a : tableGroup.getChildren()) {
-            a.setTouchable(touchable);
+            a.setTouchable(tableTouchable);
         }
     }
 
@@ -605,19 +621,23 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     }
 
     private void applyTouchableToTiles() {
-        boolean myTurn = currentState instanceof MyTurnState;
-        com.badlogic.gdx.scenes.scene2d.Touchable touchable = myTurn
+        if (currentState == null) return;
+
+        com.badlogic.gdx.scenes.scene2d.Touchable rackTouchable = currentState.canInteractWithRack()
+                ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
+                : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
+        com.badlogic.gdx.scenes.scene2d.Touchable tableTouchable = currentState.canInteractWithTable()
                 ? com.badlogic.gdx.scenes.scene2d.Touchable.enabled
                 : com.badlogic.gdx.scenes.scene2d.Touchable.disabled;
 
         if (rackGroup != null) {
             for (Actor a : rackGroup.getChildren()) {
-                a.setTouchable(touchable);
+                a.setTouchable(rackTouchable);
             }
         }
         if (tableGroup != null) {
             for (Actor a : tableGroup.getChildren()) {
-                a.setTouchable(touchable);
+                a.setTouchable(tableTouchable);
             }
         }
     }
