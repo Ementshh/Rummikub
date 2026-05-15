@@ -119,7 +119,17 @@ public class TileDragHandler {
 
                     if ("RACK".equals(sourceArea)) {
                         if (targetSetIndex >= 0) {
-                            // Join existing set
+                            // Joining an existing set — check initial meld rule
+                            java.util.List<com.rummikub.network.dto.TableSetDto> sets = gsm.getTableSets();
+                            boolean isTargetCommitted = targetSetIndex < sets.size()
+                                    && !sets.get(targetSetIndex).isNewThisTurn;
+
+                            if (!gsm.isHasDoneInitialMeld() && isTargetCommitted) {
+                                callback.showStatusMessage(
+                                        "Belum bisa manipulasi set lama — selesaikan initial meld (≥30 poin) dulu!");
+                                return true;
+                            }
+
                             PlaceTileCommand cmd = new PlaceTileCommand(
                                     actor.getTileData().id, false,
                                     targetSetIndex, "RUN");

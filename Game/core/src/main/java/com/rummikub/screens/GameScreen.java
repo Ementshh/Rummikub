@@ -531,7 +531,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         // Aturan untuk pemain yang belum initial meld
         if (!gsm.isHasDoneInitialMeld()) {
             if (newTileCount == 0) {
-                hudManager.showStatusMessage("Harus draw jika tidak meletakkan tile!");
+                hudManager.showStatusMessage("Harus taruh set baru (≥30 poin) atau draw — belum bisa manipulasi set lama!");
                 return;
             }
             if (newTileCount < 3) {
