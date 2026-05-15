@@ -149,12 +149,12 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
         // Show the local player's own username in the top-left
         String localUser = NetworkManager.getInstance().getCurrentUsername();
-        Label opponentNameLabel = makeLabel(localUser != null ? localUser : "Pemain");
+        Label playerNameLabel = makeLabel(localUser != null ? localUser : "Pemain");
         Label turnInfoLabel  = makeLabel("Giliran: ...");
         Label timerLabel = makeLabel("TIMER: --:--");
         timerLabel.setColor(Color.YELLOW);
 
-        header.add(opponentNameLabel).expandX().left();
+        header.add(playerNameLabel).expandX().left();
         header.add(turnInfoLabel).expandX().center();
         header.add(timerLabel).right().padRight(20);
 
@@ -164,11 +164,11 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         // We use a deferred approach: labels are stored in fields temporarily
         this._timerLabel = timerLabel;
         this._turnInfoLabel = turnInfoLabel;
-        this._opponentNameLabel = opponentNameLabel;
+        this._playerNameLabel = playerNameLabel;
     }
 
     // Temporary label references for deferred HudManager construction
-    private Label _timerLabel, _turnInfoLabel, _opponentNameLabel, _statusLabel;
+    private Label _timerLabel, _turnInfoLabel, _playerNameLabel, _statusLabel;
 
     private void buildTableArea() {
         // Scrollable horizontal area for table sets
@@ -251,7 +251,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
         // Create HudManager now that all labels exist
         hudManager = new GameHudManager(_timerLabel, _turnInfoLabel,
-                                        _statusLabel, _opponentNameLabel, gsm);
+                                        _statusLabel, _playerNameLabel, gsm);
 
         // Listeners
         drawButton.addListener(new ChangeListener() {

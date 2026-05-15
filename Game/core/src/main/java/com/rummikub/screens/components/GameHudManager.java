@@ -16,16 +16,16 @@ public class GameHudManager {
     private final Label timerLabel;
     private final Label turnInfoLabel;
     private final Label statusLabel;
-    private final Label opponentNameLabel;
+    private final Label playerNameLabel;
     private final GameStateManager gsm;
 
     public GameHudManager(Label timerLabel, Label turnInfoLabel,
-                          Label statusLabel, Label opponentNameLabel,
+                          Label statusLabel, Label playerNameLabel,
                           GameStateManager gsm) {
         this.timerLabel = timerLabel;
         this.turnInfoLabel = turnInfoLabel;
         this.statusLabel = statusLabel;
-        this.opponentNameLabel = opponentNameLabel;
+        this.playerNameLabel = playerNameLabel;
         this.gsm = gsm;
     }
 
@@ -37,11 +37,8 @@ public class GameHudManager {
         timerLabel.setColor(seconds <= 15 ? Color.RED : Color.YELLOW);
     }
 
-    /** Updates the turn info and opponent name labels. */
+    /** Updates the turn info labels. */
     public void updateTurnInfo() {
-        // Username resolution kasih ke gamestatemanager
-        opponentNameLabel.setText(gsm.resolveOpponentUsername());
-
         if (gsm.isMyTurn()) {
             turnInfoLabel.setText("GILIRAN: KAMU");
             turnInfoLabel.setColor(Color.GREEN);
