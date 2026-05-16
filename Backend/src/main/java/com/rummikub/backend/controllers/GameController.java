@@ -92,4 +92,14 @@ public class GameController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/cheat")
+    public ResponseEntity<?> applyCheat(@PathVariable String id) {
+        try {
+            Map<String, Object> result = gameService.applyCheat(id, getCurrentUserId());
+            return ResponseEntity.ok(Map.of("success", true, "data", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
 }

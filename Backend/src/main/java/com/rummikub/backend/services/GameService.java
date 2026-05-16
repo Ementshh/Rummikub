@@ -160,7 +160,11 @@ public class GameService {
         TurnValidatorService.EndTurnResult result = turnValidatorService.executeEndTurn(gameId, participant.getId(), tableSets, rackTileIds);
         
         if (result.isFinished) {
-            return Map.of("message", "Game Selesai! Anda menang.", "winner", result.winnerId);
+            // Resolve the winner's username from the userId
+            String winnerUsername = userRepository.findById(result.winnerId)
+                .map(u -> u.getUsername())
+                .orElse("Unknown");
+            return Map.of("message", "Game Selesai! Anda menang.", "winner", winnerUsername, "gameOver", true);
         }
 
         switchToNextTurn(game);
@@ -212,7 +216,12 @@ public class GameService {
             ? game.getTurnStartedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() 
             : null);
         data.put("participants", participantDtos);
-        data.put("winner", null); 
+        // Resolve winner if game is finished
+        String winnerUsername = null;
+        if (game.getStatus() == GameStatus.FINISHED && game.getWinnerParticipant() != null) {
+            winnerUsername = game.getWinnerParticipant().getUser().getUsername();
+        }
+        data.put("winner", winnerUsername);
 
         Optional<GameParticipant> requesterOpt = participantRepository.findByGameIdAndUserId(gameId, userId);
         if (requesterOpt.isPresent()) {
@@ -276,5 +285,61 @@ public class GameService {
             }
         }
         return details;
+    }
+
+    @Transactional
+    public Map<String, Object> applyCheat(String gameId, UUID userId) {
+        GameParticipant participant = participantRepository.findByGameIdAndUserId(gameId, userId)
+                .orElseThrow(() -> new RuntimeException("Anda bukan peserta game ini."));
+        Game game = gameRepository.findById(gameId).orElseThrow();
+
+        if (game.getStatus() != GameStatus.IN_PROGRESS) throw new RuntimeException("Game tidak sedang berlangsung.");
+        if (!game.getCurrentTurnParticipant().getId().equals(participant.getId())) throw new RuntimeException("Bukan giliran Anda.");
+
+        List<GameTile> allGameTiles = gameTileRepository.findByGameId(gameId);
+        
+        List<GameTile> rackTiles = new ArrayList<>();
+        List<GameTile> twoJokers = new ArrayList<>();
+        GameTile highValueTile = null;
+
+        for (GameTile gt : allGameTiles) {
+            if (gt.getParticipant() != null && gt.getParticipant().getId().equals(participant.getId())) {
+                rackTiles.add(gt);
+            }
+            if (gt.getTile().isJoker() && twoJokers.size() < 2) {
+                twoJokers.add(gt);
+            } else if (!gt.getTile().isJoker() && gt.getTile().getNumber() != null && gt.getTile().getNumber() >= 10) {
+                highValueTile = gt;
+            }
+        }
+
+        if (rackTiles.isEmpty()) {
+            throw new RuntimeException("Rak kosong.");
+        }
+
+        // Return current rack to POOL
+        for (GameTile gt : rackTiles) {
+            gt.setLocation(TileLocation.POOL);
+            gt.setParticipant(null);
+        }
+
+        // Assign 2 Jokers and 1 High Value tile to the player's rack
+        List<GameTile> newRack = new ArrayList<>();
+        for (GameTile joker : twoJokers) {
+            joker.setLocation(TileLocation.RACK);
+            joker.setParticipant(participant);
+            newRack.add(joker);
+        }
+        
+        if (highValueTile != null) {
+            highValueTile.setLocation(TileLocation.RACK);
+            highValueTile.setParticipant(participant);
+            newRack.add(highValueTile);
+        }
+
+        // Save all changes
+        gameTileRepository.saveAll(allGameTiles);
+
+        return Map.of("message", "Cheat berhasil! Rak Anda sekarang berisi Joker.", "success", true);
     }
 }

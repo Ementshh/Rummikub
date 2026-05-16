@@ -141,8 +141,9 @@ public class TurnValidatorService {
         if (newRackTileIds.isEmpty()) {
             var game = participant.getGame();
             game.setStatus(GameStatus.FINISHED);
+            game.setWinnerParticipant(participant);
             gameRepository.save(game);
-            return new EndTurnResult(true, participantId);
+            return new EndTurnResult(true, participant.getUser().getId());
         }
 
         return new EndTurnResult(false, null);

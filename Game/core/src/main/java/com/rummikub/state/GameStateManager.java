@@ -528,6 +528,13 @@ public class GameStateManager {
         return tileCache.get(id);
     }
 
+
+    public void cacheTile(TileDto tile) {
+        if (tile != null) {
+            tileCache.put(tile.id, tile);
+        }
+    }
+
     // Per-tile origin tracking (placed-this-turn)
 
     // Mark tile yang ditaro dari rack ke table di turn ini. TIle di set ini bisa dibalikin ke rack

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface GameTileRepository extends JpaRepository<GameTile, UUID> {
+    List<GameTile> findByGameId(String gameId);
     List<GameTile> findByGameIdAndLocationStr(String gameId, String locationStr);
     
     List<GameTile> findByGameIdAndParticipantIdAndLocationStr(String gameId, UUID participantId, String locationStr);

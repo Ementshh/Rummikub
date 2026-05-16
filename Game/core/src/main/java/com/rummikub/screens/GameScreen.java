@@ -1,6 +1,7 @@
 package com.rummikub.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -68,6 +69,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private TileDragHandler dragHandler;
     private SetValidator setValidator;
     private GameHudManager hudManager;
+    private CheatCodeHandler cheatCodeHandler;
 
     // -------------------------------------------------------------------------
     // State machine
@@ -129,6 +131,17 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         } else {
             transitionTo(new WaitingTurnState());
         }
+
+        // cheat code handler
+        cheatCodeHandler = new CheatCodeHandler(gsm, facade, gameId, () -> {
+            pollGameState();
+            refreshTileDisplay();
+        });
+
+        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(cheatCodeHandler);
+        multiplexer.addProcessor(stage);
+        Gdx.input.setInputProcessor(multiplexer);
 
         refreshTileDisplay();
     }
@@ -334,6 +347,9 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     protected void update(float delta) {
         if (currentState != null) {
             currentState.update(this, delta);
+        }
+        if (cheatCodeHandler != null) {
+            cheatCodeHandler.update(delta);
         }
     }
 
@@ -559,6 +575,10 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
                 if (r.success) {
                     commandHistory.clear();
                     if (r.data != null && r.data.gameOver) {
+                        // Store the winner username before transitioning
+                        if (r.data.winner != null) {
+                            gsm.setWinnerUsername(r.data.winner);
+                        }
                         transitionTo(new GameOverState());
                     } else {
                         transitionTo(new WaitingTurnState());

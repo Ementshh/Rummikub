@@ -132,6 +132,11 @@ public class GameApiFacade {
         return sb.toString();
     }
 
+    // trigger cheat code
+    public void cheat(String gameId, ApiCallback<GenericResponse> cb) {
+        net.post("/api/games/" + gameId + "/cheat", null, GenericResponse.class, cb);
+    }
+
     // -------------------------------------------------------------------------
     // Polling
     // -------------------------------------------------------------------------
