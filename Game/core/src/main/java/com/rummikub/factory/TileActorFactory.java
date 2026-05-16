@@ -64,8 +64,6 @@ public class TileActorFactory {
     public static Actor createDropSlot(float width, float height) {
         return new Actor() {
 
-            private final ShapeRenderer sr = new ShapeRenderer();
-
             {
                 setSize(width, height);
             }
@@ -79,6 +77,7 @@ public class TileActorFactory {
 
                 batch.end();
 
+                ShapeRenderer sr = com.rummikub.utils.ResourcePool.getInstance().getShapeRenderer();
                 sr.setProjectionMatrix(batch.getProjectionMatrix());
                 sr.begin(ShapeRenderer.ShapeType.Line);
                 sr.setColor(new Color(1f, 1f, 1f, 0.4f));

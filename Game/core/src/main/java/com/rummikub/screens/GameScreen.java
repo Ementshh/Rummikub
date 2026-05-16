@@ -2,7 +2,6 @@ package com.rummikub.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -22,6 +21,8 @@ import com.rummikub.screens.states.*;
 import com.rummikub.state.GameStateManager;
 import com.rummikub.strategy.RackTileStrategy;
 import com.rummikub.utils.Constants;
+import com.rummikub.utils.ResourcePool;
+import com.rummikub.utils.TextureCache;
 
 import java.util.List;
 
@@ -88,9 +89,6 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private Group tableGroup;
     private ScrollPane tableScroll;
 
-    private BitmapFont tileFont;
-    private ShapeRenderer bbRenderer;
-
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -109,8 +107,6 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     @Override
     protected void buildUI() {
-        tileFont = new BitmapFont();
-        bbRenderer = new ShapeRenderer();
 
         buildHeader();
         buildTableArea();
@@ -671,23 +667,13 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     @Override
     protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
-        tableRenderer.renderHighlight(bbRenderer, TABLE_Y);
+        tableRenderer.renderHighlight(ResourcePool.getInstance().getShapeRenderer(), TABLE_Y);
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private com.badlogic.gdx.scenes.scene2d.utils.Drawable makeColorDrawable(Color color) {
-        com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(
-                1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
-        pm.setColor(color);
-        pm.fill();
-        com.badlogic.gdx.graphics.Texture tex = new com.badlogic.gdx.graphics.Texture(pm);
-        pm.dispose();
-        return new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
-                new com.badlogic.gdx.graphics.g2d.TextureRegion(tex));
-    }
 
     private ScrollPane.ScrollPaneStyle buildScrollPaneStyle() {
         ScrollPane.ScrollPaneStyle style = new ScrollPane.ScrollPaneStyle();
@@ -701,13 +687,6 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     @Override
     protected void onDispose() {
-        if (tileFont != null) tileFont.dispose();
-        if (bbRenderer != null) bbRenderer.dispose();
         if (tableRenderer != null) tableRenderer.dispose();
-        if (rackGroup != null) {
-            for (Actor a : rackGroup.getChildren()) {
-                if (a instanceof TileActor) ((TileActor) a).dispose();
-            }
-        }
     }
 }

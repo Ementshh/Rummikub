@@ -12,20 +12,27 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.rummikub.RummikubGame;
+import com.rummikub.utils.ResourcePool;
+import com.rummikub.utils.TextureCache;
 
-/**
- * [TEMPLATE METHOD] — Base class for all screens.
- *
- * Subclasses must implement {@link #buildUI()} and may override the optional
- * hooks {@link #onShow()}, {@link #update(float)}, {@link #renderExtra},
- * and {@link #onDispose()}.
- *
- * The lifecycle methods (show, render, resize, dispose) are final and must
- * not be overridden.
- */
+
+// [TEMPLATE METHOD] — Base class for all screens.
+
+// Subclasses must implement {@link #buildUI()} and may override the optional
+// hooks {@link #onShow()}, {@link #update(float)}, {@link #renderExtra},
+// and {@link #onDispose()}.
+
+//  The lifecycle methods (show, render, resize, dispose) are final and must
+// not be overridden.
+
+// menggunakan {@link ResourcePool} untuk shared BitmapFont
+// dam {@link TextureCache} untuk solid-color drawables,
+
+
 public abstract class BaseScreen implements Screen {
 
     protected final RummikubGame game;
@@ -107,48 +114,42 @@ public abstract class BaseScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
     }
 
-    /** Creates a Label using the default BitmapFont. */
+
+    // Buat label menggunakan shared BitmapFont dari ResourcePool
     protected Label makeLabel(String text) {
         Label.LabelStyle style = new Label.LabelStyle();
-        style.font = new BitmapFont();
+        style.font = ResourcePool.getInstance().getFont();
         style.fontColor = Color.WHITE;
         return new Label(text, style);
     }
 
-    /** Creates a TextButton with a solid dark-blue background. */
     protected TextButton makeButton(String text) {
         return new TextButton(text, makeButtonStyle(new Color(0.20f, 0.30f, 0.60f, 1f)));
     }
 
-    /** Creates a TextButton with a custom background color. */
     protected TextButton makeButton(String text, Color color) {
         return new TextButton(text, makeButtonStyle(color));
     }
 
-    /**
-     * Builds a minimal TextButtonStyle backed by solid-color Pixmap textures.
-     * No external skin file required.
-     */
+    // Buat button style. Menggunakan shared font dari ResourcePool dan TextureCache
     protected TextButton.TextButtonStyle makeButtonStyle(Color buttonColor) {
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
-        style.font      = new BitmapFont();
+        style.font      = ResourcePool.getInstance().getFont();
         style.fontColor = Color.WHITE;
 
-        Pixmap pm = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        TextureCache tc = TextureCache.getInstance();
+        style.up = tc.getColorDrawable(buttonColor);
+        style.down = tc.getColorDrawable(buttonColor.cpy().mul(0.8f, 0.8f, 0.8f, 1f));
 
-        pm.setColor(buttonColor);
-        pm.fill();
-        style.up = new TextureRegionDrawable(new Texture(pm));
-
-        pm.setColor(buttonColor.cpy().mul(0.8f, 0.8f, 0.8f, 1f));
-        pm.fill();
-        style.down = new TextureRegionDrawable(new Texture(pm));
-
-        pm.dispose();
         return style;
     }
 
-    /** Logs a message via Gdx.app.log. */
+    // Buat solid-color Drawable yang di-cache di TextureCache
+    protected Drawable makeColorDrawable(Color color) {
+        return TextureCache.getInstance().getColorDrawable(color);
+    }
+
+    // Logs 
     protected void showMessage(String msg) {
         Gdx.app.log(getClass().getSimpleName(), msg);
     }

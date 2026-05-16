@@ -12,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.rummikub.actors.TileActor;
 import com.rummikub.factory.TileActorFactory;
 import com.rummikub.network.dto.TableSetDto;
@@ -21,14 +22,15 @@ import com.rummikub.strategy.LockedTileStrategy;
 import com.rummikub.strategy.TableTileStrategy;
 import com.rummikub.strategy.TileRenderStrategy;
 import com.rummikub.utils.Constants;
+import com.rummikub.utils.ResourcePool;
+import com.rummikub.utils.TextureCache;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles rendering of tile sets on the table area.
- * Manages bounding boxes for drag-drop hit testing and highlight rendering.
- */
+
+// Handle rendering tile sets di meja. Menggunakan {@link TextureCache} untuk solid color drawable dan  {@link ResourcePool} untuk shared bitmapfont.
+
 public class TableRenderer {
 
     private static final float BB_PADDING = 10f;
@@ -49,6 +51,13 @@ public class TableRenderer {
 
     private int numCols = 2;
 
+    // Pre-cached drawables and colors for slot rendering (avoid re-creation)
+    private final Drawable slotBgDrawable;
+    private final Drawable slotBorderDrawable;
+
+    // Pre-cached label style (shared font, created once)
+    private final Label.LabelStyle sharedLabelStyle;
+
     public TableRenderer(Group tableGroup, ScrollPane tableScroll,
                          GameStateManager gsm, SetValidator setValidator,
                          float tableHeight) {
@@ -57,6 +66,16 @@ public class TableRenderer {
         this.gsm = gsm;
         this.setValidator = setValidator;
         this.tableHeight = tableHeight;
+
+        // Pre-cache drawables used repeatedly in rebuild cycles
+        TextureCache tc = TextureCache.getInstance();
+        this.slotBgDrawable = tc.getColorDrawable(new Color(0.3f, 0.3f, 0.3f, 0.15f));
+        this.slotBorderDrawable = tc.getColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f));
+
+        // Shared label style — one BitmapFont for all labels
+        this.sharedLabelStyle = new Label.LabelStyle();
+        this.sharedLabelStyle.font = ResourcePool.getInstance().getFont();
+        this.sharedLabelStyle.fontColor = Color.WHITE;
     }
 
     // Set banyak kolom yang akan dirender
@@ -177,7 +196,7 @@ public class TableRenderer {
                 }
             }
 
-            Label setLabel = createLabel(labelText);
+            Label setLabel = new Label(labelText, sharedLabelStyle);
             setLabel.setFontScale(0.65f);
             setLabel.setColor(labelColor);
             setLabel.setPosition(slotX, slotY + tileH + 6);
@@ -250,29 +269,29 @@ public class TableRenderer {
             // Always render slot visual for empty slots
             if (isBeyondSets || (isGap && gsm.getTableSets().get(slotIndex).isEmpty())) {
                 // slot indicator
-                Image slotBg = new Image(makeColorDrawable(new Color(0.3f, 0.3f, 0.3f, 0.15f)));
+                Image slotBg = new Image(slotBgDrawable);
                 slotBg.setBounds(slotX, slotY, colWidth, SLOT_VISUAL_HEIGHT);
                 tableGroup.addActor(slotBg);
 
-                // Dashed border effect (using thin lines)
-                Image borderTop = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
+                // Border effect
+                Image borderTop = new Image(slotBorderDrawable);
                 borderTop.setBounds(slotX, slotY + SLOT_VISUAL_HEIGHT - 1, colWidth, 1);
                 tableGroup.addActor(borderTop);
 
-                Image borderBottom = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
+                Image borderBottom = new Image(slotBorderDrawable);
                 borderBottom.setBounds(slotX, slotY, colWidth, 1);
                 tableGroup.addActor(borderBottom);
 
-                Image borderLeft = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
+                Image borderLeft = new Image(slotBorderDrawable);
                 borderLeft.setBounds(slotX, slotY, 1, SLOT_VISUAL_HEIGHT);
                 tableGroup.addActor(borderLeft);
 
-                Image borderRight = new Image(makeColorDrawable(new Color(0.5f, 0.5f, 0.5f, 0.3f)));
+                Image borderRight = new Image(slotBorderDrawable);
                 borderRight.setBounds(slotX + colWidth - 1, slotY, 1, SLOT_VISUAL_HEIGHT);
                 tableGroup.addActor(borderRight);
 
                 // + sign
-                Label plusLabel = createLabel("+");
+                Label plusLabel = new Label("+", sharedLabelStyle);
                 plusLabel.setColor(new Color(0.5f, 0.5f, 0.5f, 0.5f));
                 plusLabel.setPosition(slotX + colWidth / 2f - 8f,
                                        slotY + SLOT_VISUAL_HEIGHT / 2f - 10f);
@@ -315,17 +334,6 @@ public class TableRenderer {
             });
             tableGroup.addActor(zone);
         }
-    }
-
-    private com.badlogic.gdx.scenes.scene2d.utils.Drawable makeColorDrawable(Color color) {
-        com.badlogic.gdx.graphics.Pixmap pm = new com.badlogic.gdx.graphics.Pixmap(1, 1,
-            com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888);
-        pm.setColor(color);
-        pm.fill();
-        com.badlogic.gdx.graphics.Texture tex = new com.badlogic.gdx.graphics.Texture(pm);
-        pm.dispose();
-        return new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
-            new com.badlogic.gdx.graphics.g2d.TextureRegion(tex));
     }
 
     // Bounding box API
@@ -416,26 +424,9 @@ public class TableRenderer {
         Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
     }
 
-    // -------------------------------------------------------------------------
-    // Dispose
-    // -------------------------------------------------------------------------
 
-    /** Disposes all tile actors in the table group. */
     public void dispose() {
-        if (tableGroup == null) return;
-        for (Actor a : tableGroup.getChildren()) {
-            if (a instanceof TileActor) ((TileActor) a).dispose();
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
-    private Label createLabel(String text) {
-        Label.LabelStyle style = new Label.LabelStyle();
-        style.font = new BitmapFont();
-        style.fontColor = Color.WHITE;
-        return new Label(text, style);
+        // No-op: TileActor tidak lagi memiliki native resources sendiri.
+        // Semua ShapeRenderer/BitmapFont di-share via ResourcePool.
     }
 }

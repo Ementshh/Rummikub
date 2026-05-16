@@ -9,6 +9,9 @@ import com.rummikub.utils.Constants;
  */
 public class RackTileStrategy implements TileRenderStrategy {
 
+    // Alokasi warna di awal
+    private static final Color BORDER_DEFAULT = new Color(0.6f, 0.6f, 0.6f, 1f);
+
     @Override
     public float getTileWidth() {
         return Constants.TILE_WIDTH;
@@ -28,7 +31,7 @@ public class RackTileStrategy implements TileRenderStrategy {
     public Color getBorderColor(boolean isSelected, boolean isDragging) {
         if (isDragging)  return Color.YELLOW;
         if (isSelected)  return Color.WHITE;
-        return new Color(0.6f, 0.6f, 0.6f, 1f);
+        return BORDER_DEFAULT;
     }
 
     @Override

@@ -8,17 +8,10 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
 import com.rummikub.network.dto.TileDto;
 import com.rummikub.strategy.TileRenderStrategy;
+import com.rummikub.utils.ResourcePool;
 
-/**
- * Visual representation of a single Rummikub tile.
- *
- * Rendering is delegated to a {@link TileRenderStrategy} so the same actor
- * class can be used for both rack tiles and table tiles without subclassing.
- *
- * Uses its own {@link ShapeRenderer} for the background/border and a
- * {@link BitmapFont} for the number label. Both are disposed in
- * {@link #dispose()}.
- */
+
+// Repreentasi satu tile. Menggunakan  {@link ShapeRenderer} and {@link BitmapFont} dari {@link ResourcePool}
 public class TileActor extends Actor {
 
     // -------------------------------------------------------------------------
@@ -48,11 +41,6 @@ public class TileActor extends Actor {
     private boolean dragging;
     private DragMoveListener dragMoveListener;
 
-    /** Owned by this actor — must be disposed. */
-    private final ShapeRenderer shapeRenderer;
-    /** Owned by this actor — must be disposed. */
-    private final BitmapFont font;
-
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -69,9 +57,6 @@ public class TileActor extends Actor {
         this.strategy  = strategy;
 
         setSize(strategy.getTileWidth(), strategy.getTileHeight());
-
-        shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
 
         setupDragListener();
     }
@@ -119,6 +104,9 @@ public class TileActor extends Actor {
                 if (!dragging) return;
                 
                 if (dragProxy != null) {
+                    if (dragProxy instanceof TileActor) {
+                        ((TileActor) dragProxy).dispose();
+                    }
                     dragProxy.remove();
                     dragProxy = null;
                 }
@@ -136,7 +124,7 @@ public class TileActor extends Actor {
     }
 
     // -------------------------------------------------------------------------
-    // Drawing
+    // Drawing — Gunakan share resources dari ResourcePool
     // -------------------------------------------------------------------------
 
     @Override
@@ -145,6 +133,9 @@ public class TileActor extends Actor {
         float y = getY();
         float w = getWidth();
         float h = getHeight();
+        
+        ShapeRenderer shapeRenderer = ResourcePool.getInstance().getShapeRenderer();
+        BitmapFont font = ResourcePool.getInstance().getFont();
 
         // KRITIS: Akhiri batch dulu sebelum ShapeRenderer
         batch.end();
@@ -215,7 +206,6 @@ public class TileActor extends Actor {
     // -------------------------------------------------------------------------
 
     public void dispose() {
-        shapeRenderer.dispose();
-        font.dispose();
+        // shared resources are managed by ResourcePool
     }
 }

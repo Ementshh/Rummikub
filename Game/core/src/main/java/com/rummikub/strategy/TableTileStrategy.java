@@ -9,6 +9,8 @@ import com.rummikub.utils.Constants;
  */
 public class TableTileStrategy implements TileRenderStrategy {
 
+    private static final Color BORDER_DEFAULT = new Color(0.4f, 0.4f, 0.4f, 1f);
+
     @Override
     public float getTileWidth() {
         return Constants.TILE_WIDTH * 0.85f;
@@ -28,7 +30,7 @@ public class TableTileStrategy implements TileRenderStrategy {
     public Color getBorderColor(boolean isSelected, boolean isDragging) {
         if (isDragging)  return Color.YELLOW;
         if (isSelected)  return Color.CYAN;
-        return new Color(0.4f, 0.4f, 0.4f, 1f);
+        return BORDER_DEFAULT;
     }
 
     @Override
