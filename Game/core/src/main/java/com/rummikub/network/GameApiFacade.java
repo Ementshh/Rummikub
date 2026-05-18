@@ -137,6 +137,10 @@ public class GameApiFacade {
         net.post("/api/games/" + gameId + "/cheat", null, GenericResponse.class, cb);
     }
 
+    public void leaveGame(String gameId, ApiCallback<GenericResponse> cb) {
+        net.post("/api/games/" + gameId + "/leave", null, GenericResponse.class, cb);
+    }
+
     // -------------------------------------------------------------------------
     // Polling
     // -------------------------------------------------------------------------

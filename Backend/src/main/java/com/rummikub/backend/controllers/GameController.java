@@ -102,4 +102,14 @@ public class GameController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/leave")
+    public ResponseEntity<?> leaveGame(@PathVariable String id) {
+        try {
+            Map<String, Object> result = gameService.leaveGame(id, getCurrentUserId());
+            return ResponseEntity.ok(Map.of("success", true, "data", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
 }

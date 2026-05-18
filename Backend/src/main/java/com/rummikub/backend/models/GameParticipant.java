@@ -38,4 +38,7 @@ public class GameParticipant {
 
     @Column(name = "has_done_initial_meld", nullable = false)
     private boolean hasDoneInitialMeld = false;
+
+    @Column(name = "has_left", nullable = false, columnDefinition = "boolean default false")
+    private boolean hasLeft = false;
 }

@@ -84,6 +84,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private TextButton endTurnButton;
     private TextButton sortByNumberButton;
     private TextButton sortByColorButton;
+    private TextButton leaveButton;
     private Label waitingOverlay;
     private Actor rackForbiddenOverlay;
 
@@ -249,11 +250,14 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         sortByNumberButton.setDisabled(true);
         sortByColorButton.setDisabled(true);
 
+        leaveButton = makeButton("LEAVE", new Color(0.70f, 0.20f, 0.20f, 1f));
+
         bar.add(drawButton).width(120).height(44).padRight(12);
         bar.add(resetButton).width(120).height(44).padRight(12);
         bar.add(endTurnButton).width(140).height(44).padRight(12);
         bar.add(sortByNumberButton).width(100).height(44).padRight(8);
-        bar.add(sortByColorButton).width(100).height(44).padRight(20);
+        bar.add(sortByColorButton).width(100).height(44).padRight(12);
+        bar.add(leaveButton).width(100).height(44).padRight(20);
         bar.add(_statusLabel).expandX().left();
 
         stage.addActor(bar);
@@ -282,6 +286,10 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         sortByColorButton.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) { onSortByColorClicked(); }
+        });
+        leaveButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) { onLeaveClicked(); }
         });
     }
 
@@ -610,6 +618,24 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private void onSortByColorClicked() {
         gsm.sortRackTilesByColor();
         refreshTileDisplay();
+    }
+
+    private void onLeaveClicked() {
+        facade.leaveGame(gameId, new ApiCallback<GenericResponse>() {
+            @Override
+            public void onSuccess(GenericResponse r) {
+                if (r.success) {
+                    game.setScreen(new LobbyScreen(game));
+                } else {
+                    hudManager.showStatusMessage("Gagal keluar: " + r.error);
+                }
+            }
+
+            @Override
+            public void onFailure(String err) {
+                hudManager.showStatusMessage("Error keluar: " + err);
+            }
+        });
     }
 
     // -------------------------------------------------------------------------

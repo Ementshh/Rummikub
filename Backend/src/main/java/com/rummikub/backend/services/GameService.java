@@ -137,8 +137,23 @@ public class GameService {
 
     private void switchToNextTurn(Game game) {
         List<GameParticipant> participants = participantRepository.findByGameIdOrderByTurnOrderAsc(game.getId());
-        int currIdx = participants.indexOf(game.getCurrentTurnParticipant());
+        int currIdx = -1;
+        for (int i = 0; i < participants.size(); i++) {
+            if (participants.get(i).getId().equals(game.getCurrentTurnParticipant().getId())) {
+                currIdx = i;
+                break;
+            }
+        }
+        if (currIdx == -1) currIdx = 0;
+        
         int nextIdx = (currIdx + 1) % participants.size();
+        
+        int loopCount = 0;
+        while (participants.get(nextIdx).isHasLeft() && loopCount < participants.size()) {
+            nextIdx = (nextIdx + 1) % participants.size();
+            loopCount++;
+        }
+
         game.setCurrentTurnParticipant(participants.get(nextIdx));
         game.setTurnStartedAt(LocalDateTime.now());
         gameRepository.save(game);
@@ -204,7 +219,8 @@ public class GameService {
                 "userId", p.getUser().getId().toString(),
                 "username", p.getUser().getUsername(),
                 "turnOrder", p.getTurnOrder(),
-                "score", p.getScore()
+                "score", p.getScore(),
+                "hasLeft", p.isHasLeft()
             ));
         }
 
@@ -341,5 +357,39 @@ public class GameService {
         gameTileRepository.saveAll(allGameTiles);
 
         return Map.of("message", "Cheat berhasil! Rak Anda sekarang berisi Joker.", "success", true);
+    }
+
+    @Transactional
+    public Map<String, Object> leaveGame(String gameId, UUID userId) {
+        GameParticipant participant = participantRepository.findByGameIdAndUserId(gameId, userId).orElseThrow(() -> new RuntimeException("Anda bukan peserta game ini."));
+        Game game = gameRepository.findById(gameId).orElseThrow();
+
+        participant.setHasLeft(true);
+        participantRepository.save(participant);
+
+        List<GameTile> rackTiles = gameTileRepository.findByGameIdAndParticipantIdAndLocationStr(gameId, participant.getId(), TileLocation.RACK.name());
+        for (GameTile gt : rackTiles) {
+            gt.setLocation(TileLocation.POOL);
+            gt.setParticipant(null);
+        }
+        gameTileRepository.saveAll(rackTiles);
+
+        if (game.getStatus() == GameStatus.IN_PROGRESS) {
+            List<GameParticipant> participants = participantRepository.findByGameIdOrderByTurnOrderAsc(gameId);
+            long activeCount = participants.stream().filter(p -> !p.isHasLeft()).count();
+
+            if (activeCount <= 1) {
+                GameParticipant winner = participants.stream().filter(p -> !p.isHasLeft()).findFirst().orElse(null);
+                game.setStatus(GameStatus.FINISHED);
+                game.setWinnerParticipant(winner);
+                gameRepository.save(game);
+                return Map.of("message", "Anda keluar. Game selesai.", "success", true);
+            } else {
+                if (game.getCurrentTurnParticipant() != null && game.getCurrentTurnParticipant().getId().equals(participant.getId())) {
+                    switchToNextTurn(game);
+                }
+            }
+        }
+        return Map.of("message", "Anda berhasil keluar dari game.", "success", true);
     }
 }
