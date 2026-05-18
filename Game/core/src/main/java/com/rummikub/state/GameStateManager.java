@@ -407,7 +407,7 @@ public class GameStateManager {
         }
     }
 
-    //Sorts rack tiles by number (descending), then by color (BLACK→RED→BLUE→YELLOW).
+    //Sorts rack tiles by number (ascending), then by color (BLACK→RED→BLUE→YELLOW).
     public void sortRackTilesByNumber() {
         rackSortMode = RackSortMode.BY_NUMBER;
         sortRackTilesByNumberInternal();
@@ -426,8 +426,8 @@ public class GameStateManager {
         }
 
         nonJokers.sort((a, b) -> {
-            // Sort by number descending
-            int numCompare = Integer.compare(b.number, a.number);
+            // Sort by number ascending
+            int numCompare = Integer.compare(a.number, b.number);
             if (numCompare != 0) return numCompare;
             // sort by color kalo sama
             return Integer.compare(getColorOrder(a.color), getColorOrder(b.color));
@@ -438,7 +438,7 @@ public class GameStateManager {
         myRackTiles.addAll(jokers);
     }
 
-    //Sorts rack tiles by color (BLACK→RED→BLUE→YELLOW), then by number (descending).
+    //Sorts rack tiles by color (BLACK→RED→BLUE→YELLOW), then by number (ascending).
     //Jokers are always placed at the far right.
     public void sortRackTilesByColor() {
         rackSortMode = RackSortMode.BY_COLOR;
@@ -461,8 +461,8 @@ public class GameStateManager {
             // Sort by color first
             int colorCompare = Integer.compare(getColorOrder(a.color), getColorOrder(b.color));
             if (colorCompare != 0) return colorCompare;
-            // Within same color, sort by number descending
-            return Integer.compare(b.number, a.number);
+            // Within same color, sort by number ascending
+            return Integer.compare(a.number, b.number);
         });
 
         myRackTiles.clear();
