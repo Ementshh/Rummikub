@@ -38,6 +38,8 @@ public class TileActor extends Actor {
     private boolean dragging;
     private DragMoveListener dragMoveListener;
 
+    private com.badlogic.gdx.graphics.g2d.TextureRegion tileRegion;
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -47,7 +49,22 @@ public class TileActor extends Actor {
         this.tileData  = tileData;
         this.strategy  = strategy;
 
-        setSize(strategy.getTileWidth(), strategy.getTileHeight());
+        String colorLower = tileData.color.toLowerCase();
+        if (tileData.isJoker) {
+            tileRegion = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + colorLower);
+        } else {
+            tileRegion = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower + "_" + tileData.number);
+        }
+
+        float targetHeight = strategy.getTileHeight();
+        float calculatedWidth = strategy.getTileWidth();
+
+        if (tileRegion != null) {
+            float aspectRatio = (float) tileRegion.getRegionWidth() / tileRegion.getRegionHeight();
+            calculatedWidth = targetHeight * aspectRatio;
+        }
+
+        setSize(calculatedWidth, targetHeight);
 
         setupDragListener();
     }
@@ -124,23 +141,12 @@ public class TileActor extends Actor {
         float y = getY();
         float w = getWidth();
         float h = getHeight();
-        
-        String colorLower = tileData.color.toLowerCase();
-        com.badlogic.gdx.graphics.g2d.TextureRegion region;
-        if (tileData.isJoker) {
-            region = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + colorLower);
-        } else {
-            region = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower + "_" + tileData.number);
-        }
 
-        // Draw texture
-        if (region != null) {
+        if (tileRegion != null) {
             Color c = getColor();
             batch.setColor(c.r, c.g, c.b, c.a * parentAlpha);
-            batch.draw(region, x, y, w, h);
+            batch.draw(tileRegion, x, y, w, h);
         }
-
-        // --- Border (for selected / dragging) ---
         if (selected || dragging) {
             batch.end();
             ShapeRenderer shapeRenderer = ResourcePool.getInstance().getShapeRenderer();
