@@ -34,27 +34,15 @@ public class TileActorFactory {
         return createNormal(tile, strategy);
     }
 
-    /**
-     * Creates a standard numbered tile.
-     * Text is black on yellow tiles for legibility; white on all others.
-     */
     protected static TileActor createNormal(TileDto tile, TileRenderStrategy strategy) {
-        Color bg   = ColorMapper.toLibGDX(tile.color);
-        Color text = "YELLOW".equalsIgnoreCase(tile.color) ? Color.BLACK : Color.WHITE;
-        return new TileActor(tile, bg, text, String.valueOf(tile.number), strategy);
+        return new TileActor(tile, strategy);
     }
 
     /**
-     * Creates a joker tile with a distinctive purple background.
+     * Creates a joker tile.
      */
     protected static TileActor createJoker(TileDto tile, TileRenderStrategy strategy) {
-        return new TileActor(
-                tile,
-                new Color(0.60f, 0.10f, 0.80f, 1f),
-                Color.WHITE,
-                "J",
-                strategy
-        );
+        return new TileActor(tile, strategy);
     }
 
     /**

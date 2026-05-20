@@ -32,9 +32,6 @@ public class TileActor extends Actor {
     // -------------------------------------------------------------------------
 
     private final TileDto tileData;
-    private final Color bgColor;
-    private final Color textColor;
-    private final String label;
 
     private TileRenderStrategy strategy;
     private boolean selected;
@@ -46,14 +43,8 @@ public class TileActor extends Actor {
     // -------------------------------------------------------------------------
 
     public TileActor(TileDto tileData,
-                     Color bgColor,
-                     Color textColor,
-                     String label,
                      TileRenderStrategy strategy) {
         this.tileData  = tileData;
-        this.bgColor   = bgColor;
-        this.textColor = textColor;
-        this.label     = label;
         this.strategy  = strategy;
 
         setSize(strategy.getTileWidth(), strategy.getTileHeight());
@@ -134,38 +125,35 @@ public class TileActor extends Actor {
         float w = getWidth();
         float h = getHeight();
         
-        ShapeRenderer shapeRenderer = ResourcePool.getInstance().getShapeRenderer();
-        BitmapFont font = ResourcePool.getInstance().getFont();
+        String colorLower = tileData.color.toLowerCase();
+        com.badlogic.gdx.graphics.g2d.TextureRegion region;
+        if (tileData.isJoker) {
+            region = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + colorLower);
+        } else {
+            region = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower, tileData.number);
+        }
 
-        // KRITIS: Akhiri batch dulu sebelum ShapeRenderer
-        batch.end();
+        // Draw texture
+        if (region != null) {
+            Color c = getColor();
+            batch.setColor(c.r, c.g, c.b, c.a * parentAlpha);
+            batch.draw(region, x, y, w, h);
+        }
 
-        // Sinkronkan projection dan transform matrix agar koordinat SR sama dengan Batch
-        shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-        shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
-
-        // --- Filled background ---
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(bgColor);
-        shapeRenderer.rect(x, y, w, h);
-        shapeRenderer.end();
-
-        // --- Border ---
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(strategy.getBorderColor(selected, dragging));
-        shapeRenderer.rect(x - 1, y - 1, w + 2, h + 2);
-        shapeRenderer.end();
-
-        batch.begin();
-
-        // --- Text label ---
-        // Gunakan x, y yang sama (lokal terhadap parent group)
-        font.getData().setScale(strategy.getFontScale());
-        font.setColor(textColor);
-        font.draw(batch, label, x + w * 0.18f, y + h * 0.68f);
-        
-        // Reset scale agar tidak mengganggu render lain
-        font.getData().setScale(1f);
+        // --- Border (for selected / dragging) ---
+        if (selected || dragging) {
+            batch.end();
+            ShapeRenderer shapeRenderer = ResourcePool.getInstance().getShapeRenderer();
+            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
+            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
+            
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(strategy.getBorderColor(selected, dragging));
+            shapeRenderer.rect(x - 1, y - 1, w + 2, h + 2);
+            shapeRenderer.end();
+            
+            batch.begin();
+        }
     }
 
     // -------------------------------------------------------------------------

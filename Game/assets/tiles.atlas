@@ -1,0 +1,226 @@
+tiles.png
+size: 2016, 1414
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+pma: false
+black
+  bounds: 1, 1, 200, 250
+  rotate: 90
+  index: 1
+black
+  bounds: 253, 1, 200, 250
+  rotate: 90
+  index: 2
+black
+  bounds: 505, 1, 200, 250
+  rotate: 90
+  index: 3
+black
+  bounds: 757, 1, 200, 250
+  rotate: 90
+  index: 4
+black
+  bounds: 1009, 1, 200, 250
+  rotate: 90
+  index: 5
+black
+  bounds: 1261, 1, 200, 250
+  rotate: 90
+  index: 6
+black
+  bounds: 1513, 1, 200, 250
+  rotate: 90
+  index: 7
+black
+  bounds: 1765, 1, 200, 250
+  rotate: 90
+  index: 8
+black
+  bounds: 1, 203, 200, 250
+  rotate: 90
+  index: 9
+black
+  bounds: 253, 203, 200, 250
+  rotate: 90
+  index: 10
+black
+  bounds: 505, 203, 200, 250
+  rotate: 90
+  index: 11
+black
+  bounds: 757, 203, 200, 250
+  rotate: 90
+  index: 12
+black
+  bounds: 1009, 203, 200, 250
+  rotate: 90
+  index: 13
+blue
+  bounds: 1261, 203, 200, 250
+  rotate: 90
+  index: 1
+blue
+  bounds: 1513, 203, 200, 250
+  rotate: 90
+  index: 2
+blue
+  bounds: 1765, 203, 200, 250
+  rotate: 90
+  index: 3
+blue
+  bounds: 1, 405, 200, 250
+  rotate: 90
+  index: 4
+blue
+  bounds: 253, 405, 200, 250
+  rotate: 90
+  index: 5
+blue
+  bounds: 505, 405, 200, 250
+  rotate: 90
+  index: 6
+blue
+  bounds: 757, 405, 200, 250
+  rotate: 90
+  index: 7
+blue
+  bounds: 1009, 405, 200, 250
+  rotate: 90
+  index: 8
+blue
+  bounds: 1261, 405, 200, 250
+  rotate: 90
+  index: 9
+blue
+  bounds: 1513, 405, 200, 250
+  rotate: 90
+  index: 10
+blue
+  bounds: 1765, 405, 200, 250
+  rotate: 90
+  index: 11
+blue
+  bounds: 1, 607, 200, 250
+  rotate: 90
+  index: 12
+blue
+  bounds: 253, 607, 200, 250
+  rotate: 90
+  index: 13
+joker_black
+  bounds: 505, 607, 200, 250
+  rotate: 90
+joker_blue
+  bounds: 757, 607, 200, 250
+  rotate: 90
+joker_red
+  bounds: 1009, 607, 200, 250
+  rotate: 90
+joker_yellow
+  bounds: 1261, 607, 200, 250
+  rotate: 90
+red
+  bounds: 1513, 607, 200, 250
+  rotate: 90
+  index: 1
+red
+  bounds: 1765, 607, 200, 250
+  rotate: 90
+  index: 2
+red
+  bounds: 1, 809, 200, 250
+  rotate: 90
+  index: 3
+red
+  bounds: 253, 809, 200, 250
+  rotate: 90
+  index: 4
+red
+  bounds: 505, 809, 200, 250
+  rotate: 90
+  index: 5
+red
+  bounds: 757, 809, 200, 250
+  rotate: 90
+  index: 6
+red
+  bounds: 1009, 809, 200, 250
+  rotate: 90
+  index: 7
+red
+  bounds: 1261, 809, 200, 250
+  rotate: 90
+  index: 8
+red
+  bounds: 1513, 809, 200, 250
+  rotate: 90
+  index: 9
+red
+  bounds: 1765, 809, 200, 250
+  rotate: 90
+  index: 10
+red
+  bounds: 1, 1011, 200, 250
+  rotate: 90
+  index: 11
+red
+  bounds: 253, 1011, 200, 250
+  rotate: 90
+  index: 12
+red
+  bounds: 505, 1011, 200, 250
+  rotate: 90
+  index: 13
+yellow
+  bounds: 757, 1011, 200, 250
+  rotate: 90
+  index: 1
+yellow
+  bounds: 1009, 1011, 200, 250
+  rotate: 90
+  index: 2
+yellow
+  bounds: 1261, 1011, 200, 250
+  rotate: 90
+  index: 3
+yellow
+  bounds: 1513, 1011, 200, 250
+  rotate: 90
+  index: 4
+yellow
+  bounds: 1765, 1011, 200, 250
+  rotate: 90
+  index: 5
+yellow
+  bounds: 1, 1213, 200, 250
+  rotate: 90
+  index: 6
+yellow
+  bounds: 253, 1213, 200, 250
+  rotate: 90
+  index: 7
+yellow
+  bounds: 505, 1213, 200, 250
+  rotate: 90
+  index: 8
+yellow
+  bounds: 757, 1213, 200, 250
+  rotate: 90
+  index: 9
+yellow
+  bounds: 1009, 1213, 200, 250
+  rotate: 90
+  index: 10
+yellow
+  bounds: 1261, 1213, 200, 250
+  rotate: 90
+  index: 11
+yellow
+  bounds: 1513, 1213, 200, 250
+  rotate: 90
+  index: 12
+yellow
+  bounds: 1765, 1213, 200, 250
+  rotate: 90
+  index: 13

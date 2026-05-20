@@ -2,6 +2,7 @@ package com.rummikub.utils;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 
  //Shared pool of expensive native rendering resources.
@@ -12,6 +13,7 @@ public class ResourcePool {
 
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
+    private TextureAtlas tileAtlas;
 
     private ResourcePool() {}
 
@@ -38,6 +40,13 @@ public class ResourcePool {
         return font;
     }
 
+    public TextureAtlas getTileAtlas() {
+        if (tileAtlas == null) {
+            tileAtlas = new TextureAtlas("tiles.atlas");
+        }
+        return tileAtlas;
+    }
+
 
     public void dispose() {
         if (shapeRenderer != null) {
@@ -47,6 +56,10 @@ public class ResourcePool {
         if (font != null) {
             font.dispose();
             font = null;
+        }
+        if (tileAtlas != null) {
+            tileAtlas.dispose();
+            tileAtlas = null;
         }
     }
 }
