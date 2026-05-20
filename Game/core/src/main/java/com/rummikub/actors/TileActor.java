@@ -130,7 +130,7 @@ public class TileActor extends Actor {
         if (tileData.isJoker) {
             region = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + colorLower);
         } else {
-            region = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower, tileData.number);
+            region = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower + "_" + tileData.number);
         }
 
         // Draw texture
