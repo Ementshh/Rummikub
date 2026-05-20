@@ -27,8 +27,8 @@ public class LoginScreen extends BaseScreen {
 
     private TextField usernameField;
     private TextField passwordField;
-    private TextButton loginButton;
-    private TextButton registerButton;
+    private Button loginButton;
+    private Button registerButton;
     private Label errorLabel;
 
     public LoginScreen(RummikubGame game) {
@@ -57,8 +57,8 @@ public class LoginScreen extends BaseScreen {
         passwordField.setPasswordCharacter('*');
 
         // ---- Buttons ----
-        loginButton    = makeButton("LOGIN",    new Color(0.15f, 0.45f, 0.15f, 1f));
-        registerButton = makeButton("REGISTER", new Color(0.35f, 0.35f, 0.35f, 1f));
+        loginButton    = makeImageButton("btn_login");
+        registerButton = makeImageButton("btn_register");
 
         // ---- Error label ----
         errorLabel = makeLabel("");
@@ -75,8 +75,8 @@ public class LoginScreen extends BaseScreen {
         table.add(usernameField).width(300).height(40).row();
         table.add(makeLabel("Password:")).right().padRight(10).padTop(10);
         table.add(passwordField).width(300).height(40).padTop(10).row();
-        table.add(loginButton).colspan(2).width(300).height(50).padTop(20).row();
-        table.add(registerButton).colspan(2).width(300).height(50).padTop(10).row();
+        table.add(loginButton).colspan(2).padTop(20).row();
+        table.add(registerButton).colspan(2).padTop(10).row();
         table.add(errorLabel).colspan(2).padTop(12).row();
 
         stage.addActor(table);

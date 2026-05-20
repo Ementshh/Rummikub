@@ -79,12 +79,12 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     // -------------------------------------------------------------------------
     // UI components (owned by this screen, passed to components)
     // -------------------------------------------------------------------------
-    private TextButton drawButton;
-    private TextButton resetButton;
-    private TextButton endTurnButton;
-    private TextButton sortByNumberButton;
-    private TextButton sortByColorButton;
-    private TextButton leaveButton;
+    private Button drawButton;
+    private Button resetButton;
+    private Button endTurnButton;
+    private Button sortByNumberButton;
+    private Button sortByColorButton;
+    private Button leaveButton;
     private Label waitingOverlay;
     private Actor rackForbiddenOverlay;
 
@@ -233,9 +233,9 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         bar.setBackground(makeColorDrawable(new Color(0.10f, 0.10f, 0.10f, 1f)));
         bar.pad(8);
 
-        drawButton    = makeButton("DRAW",     new Color(0.20f, 0.40f, 0.70f, 1f));
-        resetButton   = makeButton("RESET",    new Color(0.50f, 0.35f, 0.10f, 1f));
-        endTurnButton = makeButton("END TURN", new Color(0.15f, 0.55f, 0.15f, 1f));
+        drawButton    = makeImageButton("btn_draw");
+        resetButton   = makeImageButton("btn_reset");
+        endTurnButton = makeImageButton("btn_endturn");
         _statusLabel = makeLabel("Meld: BELUM (min 30 poin)");
         _statusLabel.setColor(Color.ORANGE);
 
@@ -245,19 +245,19 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         endTurnButton.setDisabled(true);
 
         // Sort buttons
-        sortByNumberButton = makeButton("SORT NUM", new Color(0.25f, 0.35f, 0.50f, 1f));
-        sortByColorButton = makeButton("SORT CLR", new Color(0.45f, 0.30f, 0.50f, 1f));
+        sortByNumberButton = makeImageButton("btn_sortnum");
+        sortByColorButton = makeImageButton("btn_sortclr");
         sortByNumberButton.setDisabled(true);
         sortByColorButton.setDisabled(true);
 
-        leaveButton = makeButton("LEAVE", new Color(0.70f, 0.20f, 0.20f, 1f));
+        leaveButton = makeImageButton("btn_leave");
 
-        bar.add(drawButton).width(120).height(44).padRight(12);
-        bar.add(resetButton).width(120).height(44).padRight(12);
-        bar.add(endTurnButton).width(140).height(44).padRight(12);
-        bar.add(sortByNumberButton).width(100).height(44).padRight(8);
-        bar.add(sortByColorButton).width(100).height(44).padRight(12);
-        bar.add(leaveButton).width(100).height(44).padRight(20);
+        bar.add(drawButton).padRight(12);
+        bar.add(resetButton).padRight(12);
+        bar.add(endTurnButton).padRight(12);
+        bar.add(sortByNumberButton).padRight(8);
+        bar.add(sortByColorButton).padRight(12);
+        bar.add(leaveButton).padRight(20);
         bar.add(_statusLabel).expandX().left();
 
         stage.addActor(bar);

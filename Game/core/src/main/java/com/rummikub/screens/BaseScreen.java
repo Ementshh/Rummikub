@@ -10,6 +10,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
@@ -129,6 +131,26 @@ public abstract class BaseScreen implements Screen {
 
     protected TextButton makeButton(String text, Color color) {
         return new TextButton(text, makeButtonStyle(color));
+    }
+
+    protected Button makeImageButton(String regionPrefix) {
+        TextureAtlas atlas = ResourcePool.getInstance().getUiAtlas();
+        TextureRegionDrawable upDrawable = new TextureRegionDrawable(atlas.findRegion(regionPrefix + "_up"));
+        TextureRegionDrawable downDrawable = new TextureRegionDrawable(atlas.findRegion(regionPrefix + "_down"));
+
+        Button.ButtonStyle style = new Button.ButtonStyle();
+        style.up = upDrawable;
+        style.down = downDrawable;
+
+        // Create a darkened/greyed-out version of the up texture for the disabled state
+        TextureRegionDrawable disabledDrawable = 
+            new TextureRegionDrawable(upDrawable.getRegion());
+        // Tint it dark grey (R: 0.4, G: 0.4, B: 0.4, Alpha: 1)
+        disabledDrawable.tint(new Color(0.4f, 0.4f, 0.4f, 1f));
+
+        style.disabled = disabledDrawable;
+
+        return new Button(style);
     }
 
     // Buat button style. Menggunakan shared font dari ResourcePool dan TextureCache

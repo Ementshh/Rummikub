@@ -56,9 +56,9 @@ public class LobbyScreen extends BaseScreen {
         errorLabel.setVisible(false);
 
         // ---- Buttons ----
-        TextButton createButton  = makeButton("BUAT GAME BARU", new Color(0.15f, 0.45f, 0.15f, 1f));
-        TextButton joinButton    = makeButton("JOIN",           new Color(0.20f, 0.40f, 0.70f, 1f));
-        TextButton logoutButton  = makeButton("LOGOUT",         new Color(0.50f, 0.15f, 0.15f, 1f));
+        Button createButton  = makeImageButton("btn_buatgame");
+        Button joinButton    = makeImageButton("btn_join");
+        Button logoutButton  = makeImageButton("btn_logout");
 
         // ---- Game-ID text field ----
         gameIdField = buildTextField("Game ID");
@@ -70,10 +70,10 @@ public class LobbyScreen extends BaseScreen {
 
         table.add(titleLabel).colspan(2).padBottom(20).row();
         table.add(welcomeLabel).colspan(2).padBottom(30).row();
-        table.add(createButton).colspan(2).width(300).height(50).padBottom(30).row();
+        table.add(createButton).colspan(2).padBottom(30).row();
         table.add(orLabel).colspan(2).padBottom(20).row();
         table.add(gameIdField).width(220).height(40).padRight(8);
-        table.add(joinButton).width(80).height(40).row();
+        table.add(joinButton).row();
         table.add(errorLabel).colspan(2).padTop(12).row();
 
         stage.addActor(table);
@@ -82,7 +82,7 @@ public class LobbyScreen extends BaseScreen {
         Table bottomBar = new Table();
         bottomBar.setFillParent(true);
         bottomBar.bottom().left().pad(20);
-        bottomBar.add(logoutButton).width(120).height(40);
+        bottomBar.add(logoutButton);
         stage.addActor(bottomBar);
 
         // ---- Listeners ----

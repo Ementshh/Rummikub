@@ -1,118 +1,118 @@
 tiles.png
-size: 2020, 1512
+size: 1600, 1750
 format: RGBA8888
 filter: Nearest, Nearest
 repeat: none
 pma: false
 black_1
-  bounds: 1, 1, 200, 250
+  bounds: 0, 0, 200, 250
 black_2
-  bounds: 203, 1, 200, 250
+  bounds: 200, 0, 200, 250
 black_3
-  bounds: 405, 1, 200, 250
+  bounds: 400, 0, 200, 250
 black_4
-  bounds: 607, 1, 200, 250
+  bounds: 600, 0, 200, 250
 black_5
-  bounds: 809, 1, 200, 250
+  bounds: 800, 0, 200, 250
 black_6
-  bounds: 1011, 1, 200, 250
+  bounds: 1000, 0, 200, 250
 black_7
-  bounds: 1213, 1, 200, 250
+  bounds: 1200, 0, 200, 250
 black_8
-  bounds: 1415, 1, 200, 250
+  bounds: 1400, 0, 200, 250
 black_9
-  bounds: 1617, 1, 200, 250
+  bounds: 0, 250, 200, 250
 black_10
-  bounds: 1819, 1, 200, 250
+  bounds: 200, 250, 200, 250
 black_11
-  bounds: 1, 253, 200, 250
+  bounds: 400, 250, 200, 250
 black_12
-  bounds: 203, 253, 200, 250
+  bounds: 600, 250, 200, 250
 black_13
-  bounds: 405, 253, 200, 250
+  bounds: 800, 250, 200, 250
 blue_1
-  bounds: 607, 253, 200, 250
+  bounds: 1000, 250, 200, 250
 blue_2
-  bounds: 809, 253, 200, 250
+  bounds: 1200, 250, 200, 250
 blue_3
-  bounds: 1011, 253, 200, 250
+  bounds: 1400, 250, 200, 250
 blue_4
-  bounds: 1213, 253, 200, 250
+  bounds: 0, 500, 200, 250
 blue_5
-  bounds: 1415, 253, 200, 250
+  bounds: 200, 500, 200, 250
 blue_6
-  bounds: 1617, 253, 200, 250
+  bounds: 400, 500, 200, 250
 blue_7
-  bounds: 1819, 253, 200, 250
+  bounds: 600, 500, 200, 250
 blue_8
-  bounds: 1, 505, 200, 250
+  bounds: 800, 500, 200, 250
 blue_9
-  bounds: 203, 505, 200, 250
+  bounds: 1000, 500, 200, 250
 blue_10
-  bounds: 405, 505, 200, 250
+  bounds: 1200, 500, 200, 250
 blue_11
-  bounds: 607, 505, 200, 250
+  bounds: 1400, 500, 200, 250
 blue_12
-  bounds: 809, 505, 200, 250
+  bounds: 0, 750, 200, 250
 blue_13
-  bounds: 1011, 505, 200, 250
+  bounds: 200, 750, 200, 250
 joker_black
-  bounds: 1213, 505, 200, 250
+  bounds: 400, 750, 200, 250
 joker_blue
-  bounds: 1415, 505, 200, 250
+  bounds: 600, 750, 200, 250
 joker_red
-  bounds: 1617, 505, 200, 250
+  bounds: 800, 750, 200, 250
 joker_yellow
-  bounds: 1819, 505, 200, 250
+  bounds: 1000, 750, 200, 250
 red_1
-  bounds: 1, 757, 200, 250
+  bounds: 1200, 750, 200, 250
 red_2
-  bounds: 203, 757, 200, 250
+  bounds: 1400, 750, 200, 250
 red_3
-  bounds: 405, 757, 200, 250
+  bounds: 0, 1000, 200, 250
 red_4
-  bounds: 607, 757, 200, 250
+  bounds: 200, 1000, 200, 250
 red_5
-  bounds: 809, 757, 200, 250
+  bounds: 400, 1000, 200, 250
 red_6
-  bounds: 1011, 757, 200, 250
+  bounds: 600, 1000, 200, 250
 red_7
-  bounds: 1213, 757, 200, 250
+  bounds: 800, 1000, 200, 250
 red_8
-  bounds: 1415, 757, 200, 250
+  bounds: 1000, 1000, 200, 250
 red_9
-  bounds: 1617, 757, 200, 250
+  bounds: 1200, 1000, 200, 250
 red_10
-  bounds: 1819, 757, 200, 250
+  bounds: 1400, 1000, 200, 250
 red_11
-  bounds: 1, 1009, 200, 250
+  bounds: 0, 1250, 200, 250
 red_12
-  bounds: 203, 1009, 200, 250
+  bounds: 200, 1250, 200, 250
 red_13
-  bounds: 405, 1009, 200, 250
+  bounds: 400, 1250, 200, 250
 yellow_1
-  bounds: 607, 1009, 200, 250
+  bounds: 600, 1250, 200, 250
 yellow_2
-  bounds: 809, 1009, 200, 250
+  bounds: 800, 1250, 200, 250
 yellow_3
-  bounds: 1011, 1009, 200, 250
+  bounds: 1000, 1250, 200, 250
 yellow_4
-  bounds: 1213, 1009, 200, 250
+  bounds: 1200, 1250, 200, 250
 yellow_5
-  bounds: 1415, 1009, 200, 250
+  bounds: 1400, 1250, 200, 250
 yellow_6
-  bounds: 1617, 1009, 200, 250
+  bounds: 0, 1500, 200, 250
 yellow_7
-  bounds: 1819, 1009, 200, 250
+  bounds: 200, 1500, 200, 250
 yellow_8
-  bounds: 1, 1261, 200, 250
+  bounds: 400, 1500, 200, 250
 yellow_9
-  bounds: 203, 1261, 200, 250
+  bounds: 600, 1500, 200, 250
 yellow_10
-  bounds: 405, 1261, 200, 250
+  bounds: 800, 1500, 200, 250
 yellow_11
-  bounds: 607, 1261, 200, 250
+  bounds: 1000, 1500, 200, 250
 yellow_12
-  bounds: 809, 1261, 200, 250
+  bounds: 1200, 1500, 200, 250
 yellow_13
-  bounds: 1011, 1261, 200, 250
+  bounds: 1400, 1500, 200, 250

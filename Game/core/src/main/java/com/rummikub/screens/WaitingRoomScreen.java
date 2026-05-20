@@ -42,7 +42,7 @@ public class WaitingRoomScreen extends BaseScreen {
 
     private Label playerListLabel;
     private Label statusLabel;
-    private TextButton startButton;
+    private Button startButton;
 
     public WaitingRoomScreen(RummikubGame game, String gameId, boolean isHost) {
         super(game);
@@ -68,11 +68,11 @@ public class WaitingRoomScreen extends BaseScreen {
         statusLabel.setColor(Color.YELLOW);
 
         // ---- Buttons ----
-        startButton = makeButton("MULAI GAME", new Color(0.15f, 0.55f, 0.15f, 1f));
+        startButton = makeImageButton("btn_mulaigame");
         startButton.setVisible(isHost);
         startButton.setDisabled(true);
 
-        TextButton backButton = makeButton("KEMBALI", new Color(0.40f, 0.40f, 0.40f, 1f));
+        Button backButton = makeImageButton("btn_kembali");
 
         // ---- Layout ----
         Table table = new Table();
@@ -86,9 +86,9 @@ public class WaitingRoomScreen extends BaseScreen {
         table.add(statusLabel).padBottom(24).row();
 
         if (isHost) {
-            table.add(startButton).width(240).height(50).padBottom(12).row();
+            table.add(startButton).padBottom(12).row();
         }
-        table.add(backButton).width(160).height(44).row();
+        table.add(backButton).row();
 
         stage.addActor(table);
 

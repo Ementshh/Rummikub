@@ -1,0 +1,58 @@
+ui.png
+size: 900, 238
+format: RGBA8888
+filter: Nearest, Nearest
+repeat: none
+pma: false
+btn_buatgame_down
+  bounds: 0, 138, 300, 50
+btn_buatgame_up
+  bounds: 300, 138, 300, 50
+btn_draw_down
+  bounds: 760, 0, 120, 44
+btn_draw_up
+  bounds: 0, 44, 120, 44
+btn_endturn_down
+  bounds: 600, 44, 140, 44
+btn_endturn_up
+  bounds: 740, 44, 140, 44
+btn_join_down
+  bounds: 0, 0, 80, 40
+btn_join_up
+  bounds: 80, 0, 80, 40
+btn_kembali_down
+  bounds: 0, 88, 160, 44
+btn_kembali_up
+  bounds: 160, 88, 160, 44
+btn_leave_down
+  bounds: 160, 0, 100, 44
+btn_leave_up
+  bounds: 260, 0, 100, 44
+btn_login_down
+  bounds: 600, 138, 300, 50
+btn_login_up
+  bounds: 0, 188, 300, 50
+btn_logout_down
+  bounds: 120, 44, 120, 40
+btn_logout_up
+  bounds: 240, 44, 120, 40
+btn_mulaigame_down
+  bounds: 320, 88, 240, 50
+btn_mulaigame_up
+  bounds: 560, 88, 240, 50
+btn_register_down
+  bounds: 300, 188, 300, 50
+btn_register_up
+  bounds: 600, 188, 300, 50
+btn_reset_down
+  bounds: 360, 44, 120, 44
+btn_reset_up
+  bounds: 480, 44, 120, 44
+btn_sortclr_down
+  bounds: 360, 0, 100, 44
+btn_sortclr_up
+  bounds: 460, 0, 100, 44
+btn_sortnum_down
+  bounds: 560, 0, 100, 44
+btn_sortnum_up
+  bounds: 660, 0, 100, 44

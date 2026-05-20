@@ -1,5 +1,6 @@
 package com.rummikub.utils;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -14,6 +15,7 @@ public class ResourcePool {
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
     private TextureAtlas tileAtlas;
+    private TextureAtlas uiAtlas;
 
     private ResourcePool() {}
 
@@ -47,6 +49,13 @@ public class ResourcePool {
         return tileAtlas;
     }
 
+    public TextureAtlas getUiAtlas() {
+        if (uiAtlas == null) {
+            uiAtlas = new TextureAtlas(Gdx.files.internal("ui.atlas"));
+        }
+        return uiAtlas;
+    }
+
 
     public void dispose() {
         if (shapeRenderer != null) {
@@ -60,6 +69,10 @@ public class ResourcePool {
         if (tileAtlas != null) {
             tileAtlas.dispose();
             tileAtlas = null;
+        }
+        if (uiAtlas != null) {
+            uiAtlas.dispose();
+            uiAtlas = null;
         }
     }
 }
