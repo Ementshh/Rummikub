@@ -64,9 +64,9 @@ public class GameOverScreen extends BaseScreen {
         participantList.setColor(Color.LIGHT_GRAY);
 
         // ---- Buttons ----
-        TextButton playAgainButton = makeButton("MAIN LAGI", new Color(0.15f, 0.50f, 0.15f, 1f));
-        TextButton exitButton      = makeButton("KELUAR",    new Color(0.50f, 0.15f, 0.15f, 1f));
-
+        com.badlogic.gdx.scenes.scene2d.ui.Button playAgainButton = makeImageButton("btn_mainlagi");
+        com.badlogic.gdx.scenes.scene2d.ui.Button exitButton = makeImageButton("btn_keluar");
+        
         // ---- Layout ----
         Table table = new Table();
         table.setFillParent(true);
@@ -76,8 +76,8 @@ public class GameOverScreen extends BaseScreen {
         table.add(winnerLabel).padBottom(30).row();
         table.add(participantsTitle).left().padBottom(8).row();
         table.add(participantList).left().padBottom(30).row();
-        table.add(playAgainButton).width(200).height(50).padBottom(12).row();
-        table.add(exitButton).width(200).height(50).row();
+        table.add(playAgainButton).padBottom(12).row();
+        table.add(exitButton).row();
 
         stage.addActor(table);
 
