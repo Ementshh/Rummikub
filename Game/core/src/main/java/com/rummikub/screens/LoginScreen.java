@@ -41,9 +41,14 @@ public class LoginScreen extends BaseScreen {
 
     @Override
     protected void buildUI() {
+        com.badlogic.gdx.scenes.scene2d.ui.Image bg = new com.badlogic.gdx.scenes.scene2d.ui.Image(com.rummikub.utils.ResourcePool.getInstance().getBgLogin());
+        bg.setFillParent(true);
+        stage.addActor(bg);
+
         // ---- Title ----
         Label titleLabel = makeLabel("RUMMIKUB ONLINE");
         titleLabel.setFontScale(2f);
+        titleLabel.setVisible(false);
 
         // ---- Text fields ----
         TextField.TextFieldStyle fieldStyle = buildTextFieldStyle();
@@ -215,7 +220,7 @@ public class LoginScreen extends BaseScreen {
         pm.dispose();
 
         TextField.TextFieldStyle style = new TextField.TextFieldStyle();
-        style.font            = new com.badlogic.gdx.graphics.g2d.BitmapFont();
+        style.font            = com.rummikub.utils.ResourcePool.getInstance().getCustomFont();
         style.fontColor       = Color.BLACK;
         style.messageFontColor = Color.GRAY;
         style.background      = new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(bgRegion);

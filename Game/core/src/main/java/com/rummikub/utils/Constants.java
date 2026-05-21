@@ -3,6 +3,8 @@ package com.rummikub.utils;
 import com.badlogic.gdx.graphics.Color;
 
 public class Constants {
+    public static final float VIRTUAL_WIDTH = 1920f;
+    public static final float VIRTUAL_HEIGHT = 1080f;
     public static final String BASE_URL = "http://localhost:3000";
     public static final int SCREEN_WIDTH = 1280;
     public static final int SCREEN_HEIGHT = 720;

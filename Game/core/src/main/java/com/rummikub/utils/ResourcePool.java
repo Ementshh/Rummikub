@@ -16,6 +16,11 @@ public class ResourcePool {
     private BitmapFont font;
     private TextureAtlas tileAtlas;
     private TextureAtlas uiAtlas;
+    private com.badlogic.gdx.graphics.Texture bgLogin;
+    private com.badlogic.gdx.graphics.Texture bgLobby;
+    private com.badlogic.gdx.graphics.Texture bgWaitingRoom;
+    private com.badlogic.gdx.graphics.Texture bgGameOver;
+    private BitmapFont customFont;
 
     private ResourcePool() {}
 
@@ -56,6 +61,40 @@ public class ResourcePool {
         return uiAtlas;
     }
 
+    public com.badlogic.gdx.graphics.Texture getBgLogin() {
+        if (bgLogin == null) {
+            bgLogin = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_loginscreen.jpg"));
+        }
+        return bgLogin;
+    }
+
+    public com.badlogic.gdx.graphics.Texture getBgLobby() {
+        if (bgLobby == null) {
+            bgLobby = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_lobby.jpg"));
+        }
+        return bgLobby;
+    }
+
+    public com.badlogic.gdx.graphics.Texture getBgWaitingRoom() {
+        if (bgWaitingRoom == null) {
+            bgWaitingRoom = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_waitingroom.jpg"));
+        }
+        return bgWaitingRoom;
+    }
+
+    public com.badlogic.gdx.graphics.Texture getBgGameOver() {
+        if (bgGameOver == null) {
+            bgGameOver = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_gameover.jpg"));
+        }
+        return bgGameOver;
+    }
+
+    public BitmapFont getCustomFont() {
+        if (customFont == null) {
+            customFont = new BitmapFont(Gdx.files.internal("myfont.fnt"));
+        }
+        return customFont;
+    }
 
     public void dispose() {
         if (shapeRenderer != null) {
@@ -73,6 +112,26 @@ public class ResourcePool {
         if (uiAtlas != null) {
             uiAtlas.dispose();
             uiAtlas = null;
+        }
+        if (bgLogin != null) {
+            bgLogin.dispose();
+            bgLogin = null;
+        }
+        if (bgLobby != null) {
+            bgLobby.dispose();
+            bgLobby = null;
+        }
+        if (bgWaitingRoom != null) {
+            bgWaitingRoom.dispose();
+            bgWaitingRoom = null;
+        }
+        if (bgGameOver != null) {
+            bgGameOver.dispose();
+            bgGameOver = null;
+        }
+        if (customFont != null) {
+            customFont.dispose();
+            customFont = null;
         }
     }
 }

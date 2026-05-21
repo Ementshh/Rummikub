@@ -40,12 +40,17 @@ public class LobbyScreen extends BaseScreen {
 
     @Override
     protected void buildUI() {
+        com.badlogic.gdx.scenes.scene2d.ui.Image bg = new com.badlogic.gdx.scenes.scene2d.ui.Image(com.rummikub.utils.ResourcePool.getInstance().getBgLobby());
+        bg.setFillParent(true);
+        stage.addActor(bg);
+
         String username = NetworkManager.getInstance().getCurrentUsername();
         if (username == null) username = "Pemain";
 
         // ---- Labels ----
         Label titleLabel   = makeLabel("LOBBY");
         titleLabel.setFontScale(2f);
+        titleLabel.setVisible(false);
 
         Label welcomeLabel = makeLabel("Selamat datang, " + username + "!");
 
@@ -193,7 +198,7 @@ public class LobbyScreen extends BaseScreen {
         pm.dispose();
 
         TextField.TextFieldStyle style = new TextField.TextFieldStyle();
-        style.font             = new com.badlogic.gdx.graphics.g2d.BitmapFont();
+        style.font             = com.rummikub.utils.ResourcePool.getInstance().getCustomFont();
         style.fontColor        = Color.BLACK;
         style.messageFontColor = Color.GRAY;
         style.background       = new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(

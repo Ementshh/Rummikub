@@ -46,7 +46,7 @@ public abstract class BaseScreen implements Screen {
         this.game = game;
         this.batch = new SpriteBatch();
         this.sr    = new ShapeRenderer();
-        this.stage = new Stage(new ScreenViewport(), batch);
+        this.stage = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(com.rummikub.utils.Constants.VIRTUAL_WIDTH, com.rummikub.utils.Constants.VIRTUAL_HEIGHT), batch);
         Gdx.input.setInputProcessor(stage);
     }
 
@@ -120,7 +120,7 @@ public abstract class BaseScreen implements Screen {
     // Buat label menggunakan shared BitmapFont dari ResourcePool
     protected Label makeLabel(String text) {
         Label.LabelStyle style = new Label.LabelStyle();
-        style.font = ResourcePool.getInstance().getFont();
+        style.font = ResourcePool.getInstance().getCustomFont();
         style.fontColor = Color.WHITE;
         return new Label(text, style);
     }

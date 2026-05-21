@@ -56,9 +56,14 @@ public class WaitingRoomScreen extends BaseScreen {
 
     @Override
     protected void buildUI() {
+        com.badlogic.gdx.scenes.scene2d.ui.Image bg = new com.badlogic.gdx.scenes.scene2d.ui.Image(com.rummikub.utils.ResourcePool.getInstance().getBgWaitingRoom());
+        bg.setFillParent(true);
+        stage.addActor(bg);
+
         // ---- Labels ----
         Label titleLabel  = makeLabel("RUANG TUNGGU");
         titleLabel.setFontScale(1.8f);
+        titleLabel.setVisible(false);
 
         Label gameIdLabel = makeLabel("Game ID: " + gameId);
         gameIdLabel.setColor(new Color(0.8f, 1f, 0.8f, 1f));
