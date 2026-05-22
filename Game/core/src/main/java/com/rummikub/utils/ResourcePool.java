@@ -22,6 +22,8 @@ public class ResourcePool {
     private com.badlogic.gdx.graphics.Texture bgWaitingRoom;
     private com.badlogic.gdx.graphics.Texture bgGameOver;
     private com.badlogic.gdx.graphics.g2d.BitmapFont customFont;
+    private com.badlogic.gdx.graphics.g2d.BitmapFont inputFont;
+
 
     private ResourcePool() {}
 
@@ -97,6 +99,19 @@ public class ResourcePool {
         return customFont;
     }
 
+    public com.badlogic.gdx.graphics.g2d.BitmapFont getInputFont() {
+        if (inputFont == null) {
+            if (!com.badlogic.gdx.Gdx.files.internal("myfont_input_0.png").exists()) {
+                com.badlogic.gdx.Gdx.app.error("ResourcePool", "myfont_input_0.png not found!");
+            } else {
+                com.badlogic.gdx.Gdx.app.log("ResourcePool", "myfont_input_0.png found successfully.");
+            }
+            inputFont = new com.badlogic.gdx.graphics.g2d.BitmapFont(com.badlogic.gdx.Gdx.files.internal("myfont_input.fnt"));
+        }
+        return inputFont;
+    }
+
+
     public void dispose() {
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
@@ -133,6 +148,10 @@ public class ResourcePool {
         if (customFont != null) {
             customFont.dispose();
             customFont = null;
+        }
+        if (inputFont != null) {
+            inputFont.dispose();
+            inputFont = null;
         }
     }
 }

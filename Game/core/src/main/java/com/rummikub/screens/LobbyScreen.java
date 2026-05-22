@@ -198,8 +198,8 @@ public class LobbyScreen extends BaseScreen {
         pm.dispose();
 
         TextField.TextFieldStyle style = new TextField.TextFieldStyle();
-        style.font             = com.rummikub.utils.ResourcePool.getInstance().getCustomFont();
-        style.fontColor        = Color.BLACK;
+        style.font             = com.rummikub.utils.ResourcePool.getInstance().getInputFont();
+        style.fontColor        = Color.WHITE;
         style.messageFontColor = Color.GRAY;
         style.background       = new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(
                 new com.badlogic.gdx.graphics.g2d.TextureRegion(tex));
