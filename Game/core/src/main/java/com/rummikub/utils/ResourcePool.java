@@ -24,6 +24,9 @@ public class ResourcePool {
     private com.badlogic.gdx.graphics.g2d.BitmapFont customFont;
     private com.badlogic.gdx.graphics.g2d.BitmapFont inputFont;
 
+    private com.badlogic.gdx.audio.Sound clickSound;
+    private com.badlogic.gdx.audio.Sound placeSound;
+
 
     private ResourcePool() {}
 
@@ -111,6 +114,20 @@ public class ResourcePool {
         return inputFont;
     }
 
+    public com.badlogic.gdx.audio.Sound getClickSound() {
+        if (clickSound == null) {
+            clickSound = Gdx.audio.newSound(Gdx.files.internal("sfx_click.ogg"));
+        }
+        return clickSound;
+    }
+
+    public com.badlogic.gdx.audio.Sound getPlaceSound() {
+        if (placeSound == null) {
+            placeSound = Gdx.audio.newSound(Gdx.files.internal("sfx_place.ogg"));
+        }
+        return placeSound;
+    }
+
 
     public void dispose() {
         if (shapeRenderer != null) {
@@ -152,6 +169,14 @@ public class ResourcePool {
         if (inputFont != null) {
             inputFont.dispose();
             inputFont = null;
+        }
+        if (clickSound != null) {
+            clickSound.dispose();
+            clickSound = null;
+        }
+        if (placeSound != null) {
+            placeSound.dispose();
+            placeSound = null;
         }
     }
 }

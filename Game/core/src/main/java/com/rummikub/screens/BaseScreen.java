@@ -150,7 +150,14 @@ public abstract class BaseScreen implements Screen {
 
         style.disabled = disabledDrawable;
 
-        return new Button(style);
+        Button button = new Button(style);
+        button.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
+            @Override
+            public void changed(com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                com.rummikub.utils.ResourcePool.getInstance().getClickSound().play();
+            }
+        });
+        return button;
     }
 
     // Buat button style. Menggunakan shared font dari ResourcePool dan TextureCache

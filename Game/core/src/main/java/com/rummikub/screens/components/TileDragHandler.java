@@ -103,6 +103,7 @@ public class TileDragHandler {
                             ReturnTileCommand cmd = new ReturnTileCommand(
                                     actor.getTileData().id, sourceSetIndex);
                             commandHistory.execute(cmd);
+                            com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                             callback.refreshTileDisplay();
                         }
                         return true;
@@ -110,6 +111,7 @@ public class TileDragHandler {
                     if ("RACK".equals(sourceArea) && state.canInteractWithRack()) {
                         // Rack ke Rack: reorder tiles dalam rack
                         reorderRackTile(actor, dropX);
+                        com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                         callback.refreshTileDisplay();
                         return true;
                     }
@@ -147,12 +149,14 @@ public class TileDragHandler {
                                     -1, "RUN");
                             commandHistory.execute(cmd);
                         }
+                        com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                         callback.refreshTileDisplay();
                     } else if ("TABLE".equals(sourceArea)) {
                         if (targetSetIndex >= 0 && targetSetIndex != sourceSetIndex) {
                             MoveWithinTableCommand cmd = new MoveWithinTableCommand(
                                     actor.getTileData().id, sourceSetIndex, targetSetIndex);
                             commandHistory.execute(cmd);
+                            com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                             callback.refreshTileDisplay();
                         } else if (targetSlotIndex >= 0) {
                             // Moved to empty slot — create new set at specific position
@@ -162,6 +166,7 @@ public class TileDragHandler {
                             PlaceTileCommand place = new PlaceTileCommand(
                                     actor.getTileData().id, true, targetSlotIndex, "RUN");
                             commandHistory.execute(place);
+                            com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                             callback.refreshTileDisplay();
                         } else if (targetSetIndex == -1 && targetSlotIndex == -1) {
                             // Moved to empty space outside any slot — create new set at end
@@ -171,6 +176,7 @@ public class TileDragHandler {
                             PlaceTileCommand place = new PlaceTileCommand(
                                     actor.getTileData().id, true, -1, "RUN");
                             commandHistory.execute(place);
+                            com.rummikub.utils.ResourcePool.getInstance().getPlaceSound().play();
                             callback.refreshTileDisplay();
                         }
                     }
