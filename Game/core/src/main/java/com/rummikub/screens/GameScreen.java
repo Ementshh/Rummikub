@@ -714,7 +714,8 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     @Override
     protected void renderExtra(SpriteBatch batch, ShapeRenderer sr) {
-        tableRenderer.renderHighlight(ResourcePool.getInstance().getShapeRenderer(), TABLE_Y);
+        sr.setProjectionMatrix(stage.getCamera().combined);
+        tableRenderer.renderHighlight(sr, TABLE_Y);
     }
 
     // -------------------------------------------------------------------------
