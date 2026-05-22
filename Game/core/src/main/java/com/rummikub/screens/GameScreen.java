@@ -297,6 +297,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         // Username label
         String username = NetworkManager.getInstance().getCurrentUsername();
         Label nameLabel = makeLabel(username != null ? username : "Pemain");
+        nameLabel.setVisible(false);
         nameLabel.setPosition(10, RACK_Y + RACK_H - 18);
         stage.addActor(nameLabel);
 
