@@ -45,7 +45,6 @@ public class GameOverScreen extends BaseScreen {
         Label titleLabel = makeLabel(iWon ? "RUMMIKUB!" : "GAME SELESAI");
         titleLabel.setFontScale(2.5f);
         titleLabel.setColor(iWon ? Color.YELLOW : Color.WHITE);
-        titleLabel.setVisible(false);
 
         // ---- Winner label ----
         Label winnerLabel;
@@ -56,7 +55,6 @@ public class GameOverScreen extends BaseScreen {
         }
         winnerLabel.setColor(iWon ? Color.GREEN : Color.LIGHT_GRAY);
         winnerLabel.setFontScale(1.3f);
-        winnerLabel.setVisible(false);
 
         // ---- Participant list ----
         Label participantsTitle = makeLabel("Peserta:");

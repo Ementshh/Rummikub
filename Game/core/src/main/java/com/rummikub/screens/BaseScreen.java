@@ -156,7 +156,7 @@ public abstract class BaseScreen implements Screen {
     // Buat button style. Menggunakan shared font dari ResourcePool dan TextureCache
     protected TextButton.TextButtonStyle makeButtonStyle(Color buttonColor) {
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();
-        style.font      = ResourcePool.getInstance().getFont();
+        style.font      = ResourcePool.getInstance().getCustomFont();
         style.fontColor = Color.WHITE;
 
         TextureCache tc = TextureCache.getInstance();

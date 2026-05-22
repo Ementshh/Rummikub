@@ -3,8 +3,6 @@ package com.rummikub.utils;
 import com.badlogic.gdx.graphics.Color;
 
 public class Constants {
-    public static final float VIRTUAL_WIDTH = 1920f;
-    public static final float VIRTUAL_HEIGHT = 1080f;
     public static final String BASE_URL = "http://localhost:3000";
     public static final int SCREEN_WIDTH = 1280;
     public static final int SCREEN_HEIGHT = 720;
@@ -13,6 +11,8 @@ public class Constants {
     public static final int RACK_Y = 20;
     public static final int POLL_INTERVAL_SECONDS = 2;
     public static final int TURN_TIMER_SECONDS = 120;
+    public static final float VIRTUAL_WIDTH = 1920f;
+    public static final float VIRTUAL_HEIGHT = 1080f;
     
     // Warna tile sebagai LibGDX Color
     public static final Color COLOR_RED    = new Color(0.85f, 0.15f, 0.15f, 1f);

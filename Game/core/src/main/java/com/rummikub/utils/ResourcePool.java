@@ -16,11 +16,12 @@ public class ResourcePool {
     private BitmapFont font;
     private TextureAtlas tileAtlas;
     private TextureAtlas uiAtlas;
+
     private com.badlogic.gdx.graphics.Texture bgLogin;
     private com.badlogic.gdx.graphics.Texture bgLobby;
     private com.badlogic.gdx.graphics.Texture bgWaitingRoom;
     private com.badlogic.gdx.graphics.Texture bgGameOver;
-    private BitmapFont customFont;
+    private com.badlogic.gdx.graphics.g2d.BitmapFont customFont;
 
     private ResourcePool() {}
 
@@ -63,35 +64,35 @@ public class ResourcePool {
 
     public com.badlogic.gdx.graphics.Texture getBgLogin() {
         if (bgLogin == null) {
-            bgLogin = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_loginscreen.jpg"));
+            bgLogin = new com.badlogic.gdx.graphics.Texture("bg_loginscreen.jpg");
         }
         return bgLogin;
     }
 
     public com.badlogic.gdx.graphics.Texture getBgLobby() {
         if (bgLobby == null) {
-            bgLobby = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_lobby.jpg"));
+            bgLobby = new com.badlogic.gdx.graphics.Texture("bg_lobby.jpg");
         }
         return bgLobby;
     }
 
     public com.badlogic.gdx.graphics.Texture getBgWaitingRoom() {
         if (bgWaitingRoom == null) {
-            bgWaitingRoom = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_waitingroom.jpg"));
+            bgWaitingRoom = new com.badlogic.gdx.graphics.Texture("bg_waitingroom.jpg");
         }
         return bgWaitingRoom;
     }
 
     public com.badlogic.gdx.graphics.Texture getBgGameOver() {
         if (bgGameOver == null) {
-            bgGameOver = new com.badlogic.gdx.graphics.Texture(Gdx.files.internal("bg_gameover.jpg"));
+            bgGameOver = new com.badlogic.gdx.graphics.Texture("bg_gameover.jpg");
         }
         return bgGameOver;
     }
 
-    public BitmapFont getCustomFont() {
+    public com.badlogic.gdx.graphics.g2d.BitmapFont getCustomFont() {
         if (customFont == null) {
-            customFont = new BitmapFont(Gdx.files.internal("myfont.fnt"));
+            customFont = new com.badlogic.gdx.graphics.g2d.BitmapFont(com.badlogic.gdx.Gdx.files.internal("myfont.fnt"));
         }
         return customFont;
     }
