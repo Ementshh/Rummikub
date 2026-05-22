@@ -162,7 +162,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         Label playerNameLabel = makeLabel(localUser != null ? localUser : "Pemain");
         Label turnInfoLabel  = makeLabel("Giliran: ...");
         Label timerLabel = makeLabel("TIMER: --:--");
-        timerLabel.setColor(Color.YELLOW);
+        timerLabel.setColor(Color.WHITE);
 
         header.add(playerNameLabel).expandX().left();
         header.add(turnInfoLabel).expandX().center();
@@ -237,7 +237,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         resetButton   = makeImageButton("btn_reset");
         endTurnButton = makeImageButton("btn_endturn");
         _statusLabel = makeLabel("Meld: BELUM (min 30 poin)");
-        _statusLabel.setColor(Color.ORANGE);
+        _statusLabel.setColor(Color.WHITE);
 
         // All buttons disabled by default — enabled only when MyTurnState is active
         drawButton.setDisabled(true);

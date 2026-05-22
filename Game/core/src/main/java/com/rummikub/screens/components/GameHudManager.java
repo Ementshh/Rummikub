@@ -34,18 +34,18 @@ public class GameHudManager {
         int m = seconds / 60;
         int s = seconds % 60;
         timerLabel.setText(String.format("TIMER: %02d:%02d", m, s));
-        timerLabel.setColor(seconds <= 15 ? Color.RED : Color.YELLOW);
+        timerLabel.setColor(Color.WHITE);
     }
 
     /** Updates the turn info labels. */
     public void updateTurnInfo() {
         if (gsm.isMyTurn()) {
             turnInfoLabel.setText("GILIRAN: KAMU");
-            turnInfoLabel.setColor(Color.GREEN);
+            turnInfoLabel.setColor(Color.WHITE);
         } else {
             String name = gsm.resolveCurrentTurnUsername();
             turnInfoLabel.setText("GILIRAN: " + name.toUpperCase());
-            turnInfoLabel.setColor(Color.LIGHT_GRAY);
+            turnInfoLabel.setColor(Color.WHITE);
         }
     }
 
@@ -70,17 +70,17 @@ public class GameHudManager {
 
             if (newTileCount == 0 && gsm.getMeldScore() == 0) {
                 statusLabel.setText("Meld: BELUM — harus draw atau taruh tile");
-                statusLabel.setColor(Color.YELLOW);
+                statusLabel.setColor(Color.WHITE);
             } else if (newTileCount == 0) {
                 statusLabel.setText("Meld: " + gsm.getMeldScore() + "/30 poin (sebelumnya)");
-                statusLabel.setColor(Color.YELLOW);
+                statusLabel.setColor(Color.WHITE);
             } else {
                 statusLabel.setText("Meld: " + totalMeld + "/30 poin");
-                statusLabel.setColor(totalMeld >= 30 ? Color.GREEN : Color.YELLOW);
+                statusLabel.setColor(Color.WHITE);
             }
         } else {
             statusLabel.setText("Meld: SUDAH \u2713");
-            statusLabel.setColor(Color.GREEN);
+            statusLabel.setColor(Color.WHITE);
         }
     }
 

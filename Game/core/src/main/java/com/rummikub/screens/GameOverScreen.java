@@ -44,7 +44,7 @@ public class GameOverScreen extends BaseScreen {
         // ---- Title ----
         Label titleLabel = makeLabel(iWon ? "RUMMIKUB!" : "GAME SELESAI");
         titleLabel.setFontScale(2.5f);
-        titleLabel.setColor(iWon ? Color.YELLOW : Color.WHITE);
+        titleLabel.setColor(Color.WHITE);
 
         // ---- Winner label ----
         Label winnerLabel;
@@ -53,7 +53,7 @@ public class GameOverScreen extends BaseScreen {
         } else {
             winnerLabel = makeLabel("Tidak ada pemenang.");
         }
-        winnerLabel.setColor(iWon ? Color.GREEN : Color.LIGHT_GRAY);
+        winnerLabel.setColor(Color.WHITE);
         winnerLabel.setFontScale(1.3f);
 
         // ---- Participant list ----
@@ -65,7 +65,7 @@ public class GameOverScreen extends BaseScreen {
             sb.append("\n");
         }
         Label participantList = makeLabel(sb.length() > 0 ? sb.toString() : "(tidak ada data)");
-        participantList.setColor(Color.LIGHT_GRAY);
+        participantList.setColor(Color.WHITE);
 
         // ---- Buttons ----
         com.badlogic.gdx.scenes.scene2d.ui.Button playAgainButton = makeImageButton("btn_mainlagi");
