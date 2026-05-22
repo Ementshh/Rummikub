@@ -47,7 +47,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private static final float HEADER_H     = 60f;
     private static final float BUTTON_BAR_H = 60f;
     private static final float RACK_H       = 100f;
-    private static final float TABLE_H      = Constants.SCREEN_HEIGHT - HEADER_H - BUTTON_BAR_H - RACK_H;
+    private static final float TABLE_H      = Constants.VIRTUAL_HEIGHT - HEADER_H - BUTTON_BAR_H - RACK_H;
 
     private static final float RACK_Y       = 0f;
     private static final float BTN_BAR_Y    = RACK_H;
@@ -153,7 +153,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     private void buildHeader() {
         Table header = new Table();
-        header.setBounds(0, HEADER_Y, Constants.SCREEN_WIDTH, HEADER_H);
+        header.setBounds(0, HEADER_Y, Constants.VIRTUAL_WIDTH, HEADER_H);
         header.setBackground(makeColorDrawable(new Color(0.08f, 0.14f, 0.08f, 1f)));
         header.left().pad(10);
 
@@ -186,7 +186,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         tableGroup.setSize(3000, TABLE_H - 20); // wide enough for many sets
 
         tableScroll = new ScrollPane(tableGroup, buildScrollPaneStyle());
-        tableScroll.setBounds(0, TABLE_Y, Constants.SCREEN_WIDTH, TABLE_H);
+        tableScroll.setBounds(0, TABLE_Y, Constants.VIRTUAL_WIDTH, TABLE_H);
         tableScroll.setScrollingDisabled(false, true);
         tableScroll.setFadeScrollBars(false);
         tableScroll.setCancelTouchFocus(false);
@@ -229,7 +229,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
     private void buildButtonBar() {
         Table bar = new Table();
-        bar.setBounds(0, BTN_BAR_Y, Constants.SCREEN_WIDTH, BUTTON_BAR_H);
+        bar.setBounds(0, BTN_BAR_Y, Constants.VIRTUAL_WIDTH, BUTTON_BAR_H);
         bar.setBackground(makeColorDrawable(new Color(0.10f, 0.10f, 0.10f, 1f)));
         bar.pad(8);
 
@@ -302,17 +302,17 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
         // Rack Background (Dark Brown)
         Image rackBg = new Image(makeColorDrawable(new Color(0.35f, 0.22f, 0.10f, 1f)));
-        rackBg.setBounds(0, 0, Constants.SCREEN_WIDTH, RACK_H + RACK_Y);
+        rackBg.setBounds(0, 0, Constants.VIRTUAL_WIDTH, RACK_H + RACK_Y);
         stage.addActor(rackBg);
 
         // Rack Border (Light Brown)
         Image rackBorder = new Image(makeColorDrawable(new Color(0.55f, 0.38f, 0.18f, 1f)));
-        rackBorder.setBounds(0, RACK_Y + RACK_H - 2, Constants.SCREEN_WIDTH, 3);
+        rackBorder.setBounds(0, RACK_Y + RACK_H - 2, Constants.VIRTUAL_WIDTH, 3);
         stage.addActor(rackBorder);
 
         // Group for tile actors
         rackGroup = new Group();
-        rackGroup.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
+        rackGroup.setBounds(0, RACK_Y, Constants.VIRTUAL_WIDTH, RACK_H);
         stage.addActor(rackGroup);
 
         rackForbiddenOverlay = buildRackForbiddenOverlay();
@@ -322,7 +322,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     private Actor buildRackForbiddenOverlay() {
         // Use a Table so we can center a label inside it
         Table overlay = new Table();
-        overlay.setBounds(0, RACK_Y, Constants.SCREEN_WIDTH, RACK_H);
+        overlay.setBounds(0, RACK_Y, Constants.VIRTUAL_WIDTH, RACK_H);
         overlay.setBackground(makeColorDrawable(new Color(0.7f, 0.05f, 0.05f, 0.80f)));
 
         Label forbidLabel = makeLabel("⛔  Tidak bisa diletakkan di sini");
@@ -341,7 +341,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         waitingOverlay.setColor(new Color(1f, 1f, 0.5f, 1f));
         waitingOverlay.setFontScale(1.4f);
         waitingOverlay.setPosition(
-                Constants.SCREEN_WIDTH / 2f - 200,
+                Constants.VIRTUAL_WIDTH / 2f - 200,
                 TABLE_Y + TABLE_H / 2f);
         waitingOverlay.setVisible(false);
         stage.addActor(waitingOverlay);
