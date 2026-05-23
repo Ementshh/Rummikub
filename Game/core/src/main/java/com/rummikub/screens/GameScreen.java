@@ -161,11 +161,14 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         String localUser = NetworkManager.getInstance().getCurrentUsername();
         Label playerNameLabel = makeLabel(localUser != null ? localUser : "Pemain");
         Label turnInfoLabel  = makeLabel("Giliran: ...");
+        Label playerCountLabel = makeLabel("Players: -/-");
+        playerCountLabel.setColor(Color.WHITE);
         Label timerLabel = makeLabel("TIMER: --:--");
         timerLabel.setColor(Color.WHITE);
 
         header.add(playerNameLabel).expandX().left();
         header.add(turnInfoLabel).expandX().center();
+        header.add(playerCountLabel).right().padRight(20);
         header.add(timerLabel).right().padRight(20);
 
         stage.addActor(header);
@@ -175,10 +178,11 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         this._timerLabel = timerLabel;
         this._turnInfoLabel = turnInfoLabel;
         this._playerNameLabel = playerNameLabel;
+        this._playerCountLabel = playerCountLabel;
     }
 
     // Temporary label references for deferred HudManager construction
-    private Label _timerLabel, _turnInfoLabel, _playerNameLabel, _statusLabel;
+    private Label _timerLabel, _turnInfoLabel, _playerNameLabel, _statusLabel, _playerCountLabel;
 
     private void buildTableArea() {
         // Scrollable horizontal area for table sets
@@ -263,7 +267,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         stage.addActor(bar);
 
         // Create HudManager now that all labels exist
-        hudManager = new GameHudManager(_timerLabel, _turnInfoLabel,
+        hudManager = new GameHudManager(_playerCountLabel, _timerLabel, _turnInfoLabel,
                                         _statusLabel, _playerNameLabel, gsm);
 
         // Listeners
@@ -462,6 +466,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
                 refreshTileDisplay();
                 hudManager.updateMeldPointsDisplay();
+                hudManager.updateParticipants();
 
                 if (gsm.isMyTurn() && !(currentState instanceof MyTurnState)) {
                     transitionTo(new MyTurnState());
@@ -659,6 +664,7 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         tableRenderer.rebuild(dragHandler);
         hudManager.updateTurnInfo();
         hudManager.updateMeldPointsDisplay();
+        hudManager.updateParticipants();
         // Re-apply the current state's touchable setting to ALL newly created actors
         applyTouchableToTiles();
     }
@@ -733,13 +739,31 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     // Lifecycle
     // -------------------------------------------------------------------------
 
+    // Heartbeat ping timer
+    private com.badlogic.gdx.utils.Timer.Task heartbeatTask;
+
     @Override
     protected void onShow() {
         com.rummikub.utils.ResourcePool.getInstance().playBgm(com.rummikub.utils.ResourcePool.getInstance().getBgmGame());
+
+        // Schedule heartbeat ping every 5 seconds
+        heartbeatTask = com.badlogic.gdx.utils.Timer.schedule(new com.badlogic.gdx.utils.Timer.Task() {
+            @Override
+            public void run() {
+                facade.sendPing(
+                    gsm.getGameId(),
+                    new ApiCallback<com.rummikub.network.dto.GenericResponse>() {
+                        @Override public void onSuccess(com.rummikub.network.dto.GenericResponse response) {}
+                        @Override public void onFailure(String error) {} // Ignore silent fails
+                    }
+                );
+            }
+        }, 0f, 5f); // Fire immediately, then every 5 seconds
     }
 
     @Override
     protected void onDispose() {
+        if (heartbeatTask != null) heartbeatTask.cancel();
         if (tableRenderer != null) tableRenderer.dispose();
     }
 }

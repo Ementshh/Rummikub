@@ -15,12 +15,15 @@ import com.rummikub.backend.models.TableSet;
 import com.rummikub.backend.repositories.TableSetRepository;
 import com.rummikub.backend.repositories.TileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GameService {
@@ -33,6 +36,31 @@ public class GameService {
     @Autowired private TileRepository tileRepository;
     @Autowired private RummikubLogicService rummikubLogicService;
     @Autowired private TurnValidatorService turnValidatorService;
+
+    // Heartbeat tracking in-memory
+    private record PingData(String gameId, Instant lastSeen) {}
+    private final Map<String, PingData> activeHeartbeats = new ConcurrentHashMap<>();
+
+    public void recordHeartbeat(String gameId, String userId) {
+        activeHeartbeats.put(userId, new PingData(gameId, Instant.now()));
+    }
+
+    @Scheduled(fixedRate = 5000)
+    public void sweepDisconnectedPlayers() {
+        Instant cutoff = Instant.now().minusSeconds(15);
+        for (Map.Entry<String, PingData> entry : activeHeartbeats.entrySet()) {
+            if (entry.getValue().lastSeen().isBefore(cutoff)) {
+                String timedOutUserId = entry.getKey();
+                String gameId = entry.getValue().gameId();
+                activeHeartbeats.remove(timedOutUserId);
+                try {
+                    leaveGame(gameId, UUID.fromString(timedOutUserId));
+                } catch (Exception e) {
+                    // Log and ignore if the game is already over or invalid
+                }
+            }
+        }
+    }
 
     private String generateRoomCode() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -361,6 +389,9 @@ public class GameService {
 
     @Transactional
     public Map<String, Object> leaveGame(String gameId, UUID userId) {
+        // Remove from heartbeat tracking so sweeper doesn't process them twice
+        activeHeartbeats.remove(userId.toString());
+
         GameParticipant participant = participantRepository.findByGameIdAndUserId(gameId, userId).orElseThrow(() -> new RuntimeException("Anda bukan peserta game ini."));
         Game game = gameRepository.findById(gameId).orElseThrow();
 

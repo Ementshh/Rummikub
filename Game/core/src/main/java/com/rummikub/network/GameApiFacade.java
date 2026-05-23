@@ -141,6 +141,14 @@ public class GameApiFacade {
         net.post("/api/games/" + gameId + "/leave", null, GenericResponse.class, cb);
     }
 
+    /**
+     * Send a heartbeat ping to keep the player's session alive.
+     * Silent failures are expected — brief network hiccups should not crash the game.
+     */
+    public void sendPing(String gameId, ApiCallback<GenericResponse> cb) {
+        net.post("/api/games/" + gameId + "/ping", null, GenericResponse.class, cb);
+    }
+
     // -------------------------------------------------------------------------
     // Polling
     // -------------------------------------------------------------------------

@@ -13,15 +13,18 @@ import com.rummikub.state.GameStateManager;
  */
 public class GameHudManager {
 
+    private final Label playerCountLabel;
     private final Label timerLabel;
     private final Label turnInfoLabel;
     private final Label statusLabel;
     private final Label playerNameLabel;
     private final GameStateManager gsm;
+    private int totalPlayers = -1;
 
-    public GameHudManager(Label timerLabel, Label turnInfoLabel,
+    public GameHudManager(Label playerCountLabel, Label timerLabel, Label turnInfoLabel,
                           Label statusLabel, Label playerNameLabel,
                           GameStateManager gsm) {
+        this.playerCountLabel = playerCountLabel;
         this.timerLabel = timerLabel;
         this.turnInfoLabel = turnInfoLabel;
         this.statusLabel = statusLabel;
@@ -88,5 +91,21 @@ public class GameHudManager {
     public void showStatusMessage(String msg) {
         statusLabel.setText(msg);
         Gdx.app.log("GameScreen", "Status: " + msg);
+    }
+
+    /** Updates the player count label based on current participants. */
+    public void updateParticipants() {
+        if (totalPlayers == -1) {
+            totalPlayers = gsm.getParticipants().size();
+        }
+        // Count active (non-left) participants
+        int activeCount = 0;
+        for (com.rummikub.network.dto.ParticipantDto p : gsm.getParticipants()) {
+            if (!p.hasLeft) {
+                activeCount++;
+            }
+        }
+        playerCountLabel.setText("Players: " + activeCount + "/" + totalPlayers);
+        playerCountLabel.setColor(Color.WHITE);
     }
 }

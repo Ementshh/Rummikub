@@ -5,6 +5,7 @@ public class ParticipantDto {
     public String username;
     public int turnOrder;
     public boolean hasDoneInitialMeld;
+    public boolean hasLeft;
 
     public ParticipantDto() {}
 

@@ -112,4 +112,14 @@ public class GameController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{id}/ping")
+    public ResponseEntity<?> ping(@PathVariable String id) {
+        try {
+            gameService.recordHeartbeat(id, getCurrentUserId().toString());
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
 }
