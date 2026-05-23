@@ -83,13 +83,16 @@ public class LobbyScreen extends BaseScreen {
 
         stage.addActor(table);
 
-        // ---- Logout button anchored bottom-left ----
+        // ---- Logout and Rules button anchored bottom-left ----
+        Button rulesButton = makeRulesButton();
         Table bottomBar = new Table();
-        bottomBar.setFillParent(true);
         bottomBar.bottom().left().pad(20);
         bottomBar.add(logoutButton);
+        bottomBar.add(rulesButton).padLeft(20);
+        bottomBar.pack();
+        bottomBar.setPosition(0, 0);
         stage.addActor(bottomBar);
-
+        
         // ---- Listeners ----
         createButton.addListener(new ChangeListener() {
             @Override

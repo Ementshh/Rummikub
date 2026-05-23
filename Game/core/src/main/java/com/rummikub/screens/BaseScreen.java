@@ -174,6 +174,23 @@ public abstract class BaseScreen implements Screen {
         return button;
     }
 
+    protected com.badlogic.gdx.scenes.scene2d.ui.Button makeRulesButton() {
+        com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle style = new com.badlogic.gdx.scenes.scene2d.ui.Button.ButtonStyle();
+        com.badlogic.gdx.graphics.g2d.TextureAtlas atlas = ResourcePool.getInstance().getUiAtlas();
+        style.up = new TextureRegionDrawable(atlas.findRegion("btn_rules_up"));
+        style.down = new TextureRegionDrawable(atlas.findRegion("btn_rules_down"));
+
+        com.badlogic.gdx.scenes.scene2d.ui.Button rulesBtn = new com.badlogic.gdx.scenes.scene2d.ui.Button(style);
+        rulesBtn.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
+            @Override
+            public void changed(com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                com.rummikub.utils.ResourcePool.getInstance().getClickSound().play();
+                com.badlogic.gdx.Gdx.net.openURI("https://rummirules.vercel.app/");
+            }
+        });
+        return rulesBtn;
+    }
+
     // Buat button style. Menggunakan shared font dari ResourcePool dan TextureCache
     protected TextButton.TextButtonStyle makeButtonStyle(Color buttonColor) {
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle();

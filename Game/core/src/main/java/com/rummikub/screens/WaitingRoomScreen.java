@@ -91,11 +91,20 @@ public class WaitingRoomScreen extends BaseScreen {
         table.add(statusLabel).padBottom(24).row();
 
         if (isHost) {
-            table.add(startButton).padBottom(12).row();
+            table.add(startButton).width(240).height(50).padBottom(12).row();
         }
         table.add(backButton).row();
 
         stage.addActor(table);
+
+        // ---- Rules button anchored bottom-left ----
+        Button rulesButton = makeRulesButton();
+        Table bottomBar = new Table();
+        bottomBar.bottom().left().pad(20);
+        bottomBar.add(rulesButton);
+        bottomBar.pack();
+        bottomBar.setPosition(0, 0);
+        stage.addActor(bottomBar);
 
         // ---- Listeners ----
         startButton.addListener(new ChangeListener() {
