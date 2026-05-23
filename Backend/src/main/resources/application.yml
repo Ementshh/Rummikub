@@ -1,22 +1,21 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/rummikub_db?stringtype=unspecified
-    username: postgres
-    password: ement # Silakan sesuaikan password DB Anda
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
 
 server:
-  port: 3000 # Menjaga kompabilitas port frontend jika frontend expect backend di 3000
+  port: ${PORT:8080}
 
 app:
   jwt:
-    secret: "3f345c270d4c1b9a9c43d9b89182312b9a781b2c4516719abc1231f24db4ca21" # 256-bit dummy secret
+    secret: ${JWT_SECRET}
     expiration: 86400000
