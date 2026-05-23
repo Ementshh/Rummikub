@@ -1,5 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
+java.sourceCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_11
 
 application {
     mainClass = 'com.rummikub.DesktopLauncher'
