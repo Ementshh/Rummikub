@@ -1,20 +1,18 @@
 package com.rummikub.network;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Net;
 import com.badlogic.gdx.utils.Json;
 import com.rummikub.utils.Constants;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * [SINGLETON] — Single HTTP client instance for the entire application lifecycle.
  *
- * All network calls run on a background thread to avoid blocking the LibGDX
- * render thread. Results are posted back to the main thread via
- * Gdx.app.postRunnable() before invoking the callback.
+ * All network calls use libGDX's cross-platform Net API so they work on
+ * Desktop, Android, and HTML5/GWT. Results are posted back to the main
+ * thread via Gdx.app.postRunnable() before invoking the callback.
  */
 public class NetworkManager {
 
@@ -88,12 +86,12 @@ public class NetworkManager {
      */
     @SuppressWarnings("unchecked")
     private String toStandardJson(Object body) {
-        if (body instanceof java.util.Map) {
+        if (body instanceof Map) {
             // Build a proper JSON object manually — guaranteed quoted keys
-            java.util.Map<String, Object> map = (java.util.Map<String, Object>) body;
+            Map<String, Object> map = (Map<String, Object>) body;
             StringBuilder sb = new StringBuilder("{");
             boolean first = true;
-            for (java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
                 if (!first) sb.append(",");
                 first = false;
                 sb.append("\"").append(entry.getKey()).append("\":");
@@ -120,7 +118,7 @@ public class NetworkManager {
     // -------------------------------------------------------------------------
 
     /**
-     * Performs an HTTP POST on a background thread.
+     * Performs an HTTP POST using libGDX's cross-platform Net API.
      * Body is serialized to JSON via LibGDX Json. Pass {@code null} for an empty body.
      */
     public <T> void post(String endpoint, Object body, Class<T> responseType, ApiCallback<T> cb) {
@@ -133,80 +131,139 @@ public class NetworkManager {
      * Use this when manual JSON construction is needed (e.g., to guarantee quoted keys).
      */
     public <T> void postRaw(String endpoint, String bodyJson, Class<T> responseType, ApiCallback<T> cb) {
-        com.badlogic.gdx.Gdx.app.log("HTTP_BODY", "POST " + endpoint + " body: " + bodyJson);
-        new Thread(() -> {
-            try {
-                URL url = new URL(Constants.BASE_URL + endpoint);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Accept", "application/json");
-                if (jwtToken != null) {
-                    conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
-                }
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(15_000);
+        Gdx.app.log("HTTP_BODY", "POST " + endpoint + " body: " + bodyJson);
 
-                conn.getOutputStream().write(bodyJson.getBytes(StandardCharsets.UTF_8));
+        Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.POST);
+        request.setUrl(Constants.BASE_URL + endpoint);
+        request.setHeader("Content-Type", "application/json");
+        request.setHeader("Accept", "application/json");
+        if (jwtToken != null) {
+            request.setHeader("Authorization", "Bearer " + jwtToken);
+        }
+        request.setContent(bodyJson);
+        request.setTimeOut(15000);
 
-                int status = conn.getResponseCode();
-                InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
-                String resp = (is != null)
-                        ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
-                        : "";
+        Gdx.net.sendHttpRequest(request, new Net.HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(Net.HttpResponse httpResponse) {
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                String resp = httpResponse.getResultAsString();
 
-                Gdx.app.log("NetworkManager", "POST " + endpoint + " -> HTTP " + status + " | body: " + resp);
+                Gdx.app.log("NetworkManager", "POST " + endpoint + " -> HTTP " + statusCode + " | body: " + resp);
 
-                if (resp.isBlank()) {
-                    resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
+                if (resp == null || resp.trim().isEmpty()) {
+                    resp = (statusCode >= 200 && statusCode < 300)
+                        ? "{\"success\":true}"
+                        : "{\"success\":false}";
                 }
 
-                T result = json.fromJson(responseType, resp);
-                Gdx.app.postRunnable(() -> cb.onSuccess(result));
-
-            } catch (Exception e) {
-                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                Gdx.app.postRunnable(() -> cb.onFailure(msg));
+                try {
+                    final T result = json.fromJson(responseType, resp);
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onSuccess(result);
+                        }
+                    });
+                } catch (final Exception e) {
+                    final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onFailure(msg);
+                        }
+                    });
+                }
             }
-        }).start();
+
+            @Override
+            public void failed(Throwable t) {
+                final String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getName();
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure(msg);
+                    }
+                });
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure("Request cancelled");
+                    }
+                });
+            }
+        });
     }
 
     /**
-     * Performs an HTTP GET on a background thread.
+     * Performs an HTTP GET using libGDX's cross-platform Net API.
      */
     public <T> void get(String endpoint, Class<T> responseType, ApiCallback<T> cb) {
-        new Thread(() -> {
-            try {
-                URL url = new URL(Constants.BASE_URL + endpoint);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                if (jwtToken != null) {
-                    conn.setRequestProperty("Authorization", "Bearer " + jwtToken);
-                }
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(15_000);
+        Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.GET);
+        request.setUrl(Constants.BASE_URL + endpoint);
+        request.setHeader("Accept", "application/json");
+        if (jwtToken != null) {
+            request.setHeader("Authorization", "Bearer " + jwtToken);
+        }
+        request.setTimeOut(15000);
 
-                int status = conn.getResponseCode();
-                InputStream is = (status < 400) ? conn.getInputStream() : conn.getErrorStream();
-                String resp = (is != null)
-                        ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
-                        : "{}";
+        Gdx.net.sendHttpRequest(request, new Net.HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(Net.HttpResponse httpResponse) {
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                String resp = httpResponse.getResultAsString();
 
-                if (resp.isBlank() || resp.equals("{}")) {
-                    resp = (status >= 200 && status < 300) ? "{\"success\":true}" : "{\"success\":false}";
+                if (resp == null || resp.trim().isEmpty() || resp.equals("{}")) {
+                    resp = (statusCode >= 200 && statusCode < 300)
+                        ? "{\"success\":true}"
+                        : "{\"success\":false}";
                 }
 
-                Gdx.app.log("NetworkManager", "GET " + endpoint + " -> HTTP " + status + " | body: " + resp);
+                Gdx.app.log("NetworkManager", "GET " + endpoint + " -> HTTP " + statusCode + " | body: " + resp);
 
-                T result = json.fromJson(responseType, resp);
-                Gdx.app.postRunnable(() -> cb.onSuccess(result));
-
-            } catch (Exception e) {
-                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                Gdx.app.postRunnable(() -> cb.onFailure(msg));
+                try {
+                    final T result = json.fromJson(responseType, resp);
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onSuccess(result);
+                        }
+                    });
+                } catch (final Exception e) {
+                    final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onFailure(msg);
+                        }
+                    });
+                }
             }
-        }).start();
+
+            @Override
+            public void failed(Throwable t) {
+                final String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getName();
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure(msg);
+                    }
+                });
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure("Request cancelled");
+                    }
+                });
+            }
+        });
     }
 }

@@ -3,7 +3,7 @@ package com.rummikub.gwt;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.gwt.GwtApplication;
 import com.badlogic.gdx.backends.gwt.GwtApplicationConfiguration;
-import com.rummikub.DesktopLauncher;
+import com.rummikub.RummikubGame;
 
 /** Launches the GWT application. */
 public class GwtLauncher extends GwtApplication {
@@ -14,12 +14,9 @@ public class GwtLauncher extends GwtApplication {
             cfg.padVertical = 0;
             cfg.padHorizontal = 0;
             return cfg;
-            // If you want a fixed size application, comment out the above resizable section,
-            // and uncomment below:
-            //return new GwtApplicationConfiguration(640, 480);
         }
         @Override
         public ApplicationListener createApplicationListener () {
-            return new DesktopLauncher();
+            return new RummikubGame();
         }
 }

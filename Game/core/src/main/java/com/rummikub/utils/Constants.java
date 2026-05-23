@@ -3,7 +3,7 @@ package com.rummikub.utils;
 import com.badlogic.gdx.graphics.Color;
 
 public class Constants {
-    public static final String BASE_URL = "http://localhost:3000";
+    public static final String BASE_URL = "https://fearless-adaptation-production-76e6.up.railway.app";
     public static final int SCREEN_WIDTH = 1280;
     public static final int SCREEN_HEIGHT = 720;
     public static final int TILE_WIDTH = 60;
