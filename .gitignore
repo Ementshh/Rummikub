@@ -49,6 +49,5 @@ out/
 Game/.gradle/w
 *.bin
 *.class
-*.yml
 *.log
 !gradle/wrapper/gradle-wrapper.jar
