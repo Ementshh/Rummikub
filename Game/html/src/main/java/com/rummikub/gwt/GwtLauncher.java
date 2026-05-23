@@ -9,10 +9,12 @@ import com.rummikub.RummikubGame;
 public class GwtLauncher extends GwtApplication {
         @Override
         public GwtApplicationConfiguration getConfig () {
-            // Resizable application, uses available space in browser with no padding:
-            GwtApplicationConfiguration cfg = new GwtApplicationConfiguration(true);
+            // Disable physical pixels to avoid texture scaling bugs on some retina web displays
+            GwtApplicationConfiguration cfg = new GwtApplicationConfiguration(false);
             cfg.padVertical = 0;
             cfg.padHorizontal = 0;
+            // Explicitly disable WebGL 2.0 to prevent the 'drawElementsInstanced' index buffer crash
+            cfg.useGL30 = false;
             return cfg;
         }
         @Override
