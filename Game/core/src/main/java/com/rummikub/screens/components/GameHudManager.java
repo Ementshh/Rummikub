@@ -36,7 +36,12 @@ public class GameHudManager {
     public void updateTimerDisplay(int seconds) {
         int m = seconds / 60;
         int s = seconds % 60;
-        timerLabel.setText(String.format("TIMER: %02d:%02d", m, s));
+        
+        // GWT-safe zero padding
+        String mStr = (m < 10 ? "0" : "") + m;
+        String sStr = (s < 10 ? "0" : "") + s;
+        
+        timerLabel.setText("TIMER: " + mStr + ":" + sStr);
         timerLabel.setColor(Color.WHITE);
     }
 
