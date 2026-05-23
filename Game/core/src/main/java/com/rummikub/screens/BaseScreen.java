@@ -48,6 +48,20 @@ public abstract class BaseScreen implements Screen {
         this.sr    = new ShapeRenderer();
         this.stage = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(com.rummikub.utils.Constants.VIRTUAL_WIDTH, com.rummikub.utils.Constants.VIRTUAL_HEIGHT), batch);
         Gdx.input.setInputProcessor(stage);
+
+        stage.addListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
+            @Override
+            public boolean keyUp(com.badlogic.gdx.scenes.scene2d.InputEvent event, int keycode) {
+                if (keycode == com.badlogic.gdx.Input.Keys.M) {
+                    // Prevent muting if the user is currently typing in an input box
+                    if (!(stage.getKeyboardFocus() instanceof com.badlogic.gdx.scenes.scene2d.ui.TextField)) {
+                        com.rummikub.utils.ResourcePool.getInstance().toggleMute();
+                        return true;
+                    }
+                }
+                return super.keyUp(event, keycode);
+            }
+        });
     }
 
     // -------------------------------------------------------------------------

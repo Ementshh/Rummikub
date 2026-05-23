@@ -8,6 +8,7 @@ import com.rummikub.RummikubGame;
 import com.rummikub.network.NetworkManager;
 import com.rummikub.network.dto.ParticipantDto;
 import com.rummikub.state.GameStateManager;
+import com.rummikub.utils.ResourcePool;
 
 /**
  * Game-over screen — shown when the game ends.
@@ -40,6 +41,13 @@ public class GameOverScreen extends BaseScreen {
 
         String myUsername = NetworkManager.getInstance().getCurrentUsername();
         boolean iWon = winnerUsername != null && winnerUsername.equals(myUsername);
+        boolean isWinner = iWon;
+
+        if (isWinner) {
+            ResourcePool.getInstance().getSfxWin().play();
+        } else {
+            ResourcePool.getInstance().getSfxLose().play();
+        }
 
         // ---- Title ----
         Label titleLabel = makeLabel(iWon ? "RUMMIKUB!" : "GAME SELESAI");
@@ -99,5 +107,10 @@ public class GameOverScreen extends BaseScreen {
                 com.badlogic.gdx.Gdx.app.exit();
             }
         });
+    }
+
+    @Override
+    protected void onShow() {
+        ResourcePool.getInstance().stopBgm();
     }
 }

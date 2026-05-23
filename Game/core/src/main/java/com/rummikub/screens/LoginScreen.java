@@ -228,4 +228,9 @@ public class LoginScreen extends BaseScreen {
         style.cursor          = new com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable(bgRegion);
         return style;
     }
+
+    @Override
+    protected void onShow() {
+        com.rummikub.utils.ResourcePool.getInstance().playBgm(com.rummikub.utils.ResourcePool.getInstance().getBgmMenu());
+    }
 }

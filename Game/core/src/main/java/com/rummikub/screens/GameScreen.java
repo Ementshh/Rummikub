@@ -734,6 +734,11 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
     // -------------------------------------------------------------------------
 
     @Override
+    protected void onShow() {
+        com.rummikub.utils.ResourcePool.getInstance().playBgm(com.rummikub.utils.ResourcePool.getInstance().getBgmGame());
+    }
+
+    @Override
     protected void onDispose() {
         if (tableRenderer != null) tableRenderer.dispose();
     }

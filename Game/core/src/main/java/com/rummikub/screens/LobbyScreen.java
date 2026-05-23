@@ -209,4 +209,9 @@ public class LobbyScreen extends BaseScreen {
         field.setMessageText(placeholder);
         return field;
     }
+
+    @Override
+    protected void onShow() {
+        com.rummikub.utils.ResourcePool.getInstance().playBgm(com.rummikub.utils.ResourcePool.getInstance().getBgmMenu());
+    }
 }

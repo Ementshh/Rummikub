@@ -226,4 +226,9 @@ public class WaitingRoomScreen extends BaseScreen {
             }
         });
     }
+
+    @Override
+    protected void onShow() {
+        com.rummikub.utils.ResourcePool.getInstance().playBgm(com.rummikub.utils.ResourcePool.getInstance().getBgmMenu());
+    }
 }

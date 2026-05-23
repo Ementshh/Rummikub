@@ -27,6 +27,12 @@ public class ResourcePool {
     private com.badlogic.gdx.audio.Sound clickSound;
     private com.badlogic.gdx.audio.Sound placeSound;
 
+    private com.badlogic.gdx.audio.Music bgmMenu;
+    private com.badlogic.gdx.audio.Music bgmGame;
+    private com.badlogic.gdx.audio.Sound sfxWin;
+    private com.badlogic.gdx.audio.Sound sfxLose;
+    private com.badlogic.gdx.audio.Music currentBgm;
+    private boolean isMuted = false;
 
     private ResourcePool() {}
 
@@ -128,6 +134,64 @@ public class ResourcePool {
         return placeSound;
     }
 
+    public com.badlogic.gdx.audio.Music getBgmMenu() {
+        if (bgmMenu == null) {
+            bgmMenu = Gdx.audio.newMusic(Gdx.files.internal("bgm_menu.ogg"));
+            bgmMenu.setLooping(true);
+        }
+        return bgmMenu;
+    }
+
+    public com.badlogic.gdx.audio.Music getBgmGame() {
+        if (bgmGame == null) {
+            bgmGame = Gdx.audio.newMusic(Gdx.files.internal("bgm_game.ogg"));
+            bgmGame.setLooping(true);
+        }
+        return bgmGame;
+    }
+
+    public com.badlogic.gdx.audio.Sound getSfxWin() {
+        if (sfxWin == null) {
+            sfxWin = Gdx.audio.newSound(Gdx.files.internal("sfx_win.ogg"));
+        }
+        return sfxWin;
+    }
+
+    public com.badlogic.gdx.audio.Sound getSfxLose() {
+        if (sfxLose == null) {
+            sfxLose = Gdx.audio.newSound(Gdx.files.internal("sfx_lose.ogg"));
+        }
+        return sfxLose;
+    }
+
+    public void playBgm(com.badlogic.gdx.audio.Music newBgm) {
+        if (currentBgm == newBgm) {
+            return;
+        }
+        if (currentBgm != null) {
+            currentBgm.stop();
+        }
+        currentBgm = newBgm;
+        if (currentBgm != null) {
+            currentBgm.setVolume(isMuted ? 0f : 1f);
+            currentBgm.play();
+        }
+    }
+
+    public void stopBgm() {
+        if (currentBgm != null) {
+            currentBgm.stop();
+            currentBgm = null;
+        }
+    }
+
+    public void toggleMute() {
+        isMuted = !isMuted;
+        if (currentBgm != null) {
+            currentBgm.setVolume(isMuted ? 0f : 1f);
+        }
+    }
+
 
     public void dispose() {
         if (shapeRenderer != null) {
@@ -178,5 +242,22 @@ public class ResourcePool {
             placeSound.dispose();
             placeSound = null;
         }
+        if (bgmMenu != null) {
+            bgmMenu.dispose();
+            bgmMenu = null;
+        }
+        if (bgmGame != null) {
+            bgmGame.dispose();
+            bgmGame = null;
+        }
+        if (sfxWin != null) {
+            sfxWin.dispose();
+            sfxWin = null;
+        }
+        if (sfxLose != null) {
+            sfxLose.dispose();
+            sfxLose = null;
+        }
+        currentBgm = null;
     }
 }
