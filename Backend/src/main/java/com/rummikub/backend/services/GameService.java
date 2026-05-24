@@ -243,13 +243,14 @@ public class GameService {
 
         List<Map<String, Object>> participantDtos = new ArrayList<>();
         for (GameParticipant p : participants) {
-            participantDtos.add(Map.of(
-                "userId", p.getUser().getId().toString(),
-                "username", p.getUser().getUsername(),
-                "turnOrder", p.getTurnOrder(),
-                "score", p.getScore(),
-                "hasLeft", p.isHasLeft()
-            ));
+            Map<String, Object> pdto = new HashMap<>();
+            pdto.put("userId", p.getUser().getId().toString());
+            pdto.put("username", p.getUser().getUsername());
+            pdto.put("turnOrder", p.getTurnOrder());
+            pdto.put("score", p.getScore());
+            pdto.put("hasLeft", p.isHasLeft());
+            pdto.put("hasDoneInitialMeld", p.isHasDoneInitialMeld());
+            participantDtos.add(pdto);
         }
 
         Map<String, Object> data = new HashMap<>();

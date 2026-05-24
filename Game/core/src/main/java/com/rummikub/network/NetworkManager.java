@@ -5,6 +5,9 @@ import com.badlogic.gdx.Net;
 import com.badlogic.gdx.utils.Json;
 import com.rummikub.utils.Constants;
 
+import com.rummikub.network.dto.GameStateResponse;
+import com.rummikub.network.dto.ParticipantDto;
+
 import java.util.Map;
 
 /**
@@ -235,6 +238,159 @@ public class NetworkManager {
                     });
                 } catch (final Exception e) {
                     final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onFailure(msg);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                final String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getName();
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure(msg);
+                    }
+                });
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure("Request cancelled");
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Performs an HTTP GET and manually parses the GameStateResponse tree
+     * to bypass LibGDX Json generic List limitations under GWT.
+     */
+    public void getGameStateManual(String endpoint, ApiCallback<GameStateResponse> cb) {
+        Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.GET);
+        request.setUrl(Constants.BASE_URL + endpoint);
+        request.setHeader("Accept", "application/json");
+        if (jwtToken != null) {
+            request.setHeader("Authorization", "Bearer " + jwtToken);
+        }
+        request.setTimeOut(15000);
+
+        Gdx.net.sendHttpRequest(request, new Net.HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(Net.HttpResponse httpResponse) {
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                String resp = httpResponse.getResultAsString();
+
+                Gdx.app.log("NetworkManager", "GET " + endpoint + " -> HTTP " + statusCode + " | body: " + resp);
+
+                if (resp == null || resp.trim().isEmpty() || resp.equals("{}")) {
+                    final String errorMsg = "Empty response";
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onFailure(errorMsg);
+                        }
+                    });
+                    return;
+                }
+
+                try {
+                    com.badlogic.gdx.utils.JsonReader reader = new com.badlogic.gdx.utils.JsonReader();
+                    com.badlogic.gdx.utils.JsonValue root = reader.parse(resp);
+
+                    final GameStateResponse result = new GameStateResponse();
+                    result.success = root.getBoolean("success", false);
+                    result.error = root.getString("error", null);
+
+                    if (root.has("data") && !root.get("data").isNull()) {
+                        com.badlogic.gdx.utils.JsonValue dataNode = root.get("data");
+                        result.data = new GameStateResponse.GameData();
+                        result.data.id = dataNode.getString("id", null);
+                        result.data.status = dataNode.getString("status", null);
+                        result.data.currentTurnUserId = dataNode.getString("currentTurnUserId", null);
+                        result.data.winner = dataNode.getString("winner", null);
+                        result.data.hasDoneInitialMeld = dataNode.getBoolean("hasDoneInitialMeld", false);
+                        result.data.meldScore = dataNode.getInt("meldScore", 0);
+                        
+                        if (dataNode.has("turnStartedAt") && !dataNode.get("turnStartedAt").isNull()) {
+                            result.data.turnStartedAt = dataNode.getLong("turnStartedAt");
+                        }
+
+                        // Participants
+                        if (dataNode.has("participants") && dataNode.get("participants").isArray()) {
+                            result.data.participants = new java.util.ArrayList<ParticipantDto>();
+                            for (com.badlogic.gdx.utils.JsonValue pNode : dataNode.get("participants")) {
+                                ParticipantDto p = new ParticipantDto();
+                                p.userId = pNode.getString("userId", null);
+                                p.username = pNode.getString("username", null);
+                                p.turnOrder = pNode.getInt("turnOrder", 0);
+                                p.score = pNode.getInt("score", 0);
+                                p.hasDoneInitialMeld = pNode.getBoolean("hasDoneInitialMeld", false);
+                                p.hasLeft = pNode.getBoolean("hasLeft", false);
+                                result.data.participants.add(p);
+                            }
+                        }
+
+                        // My Rack Tiles
+                        if (dataNode.has("myRackTiles") && dataNode.get("myRackTiles").isArray()) {
+                            result.data.myRackTiles = new java.util.ArrayList<com.rummikub.network.dto.TileDto>();
+                            for (com.badlogic.gdx.utils.JsonValue tNode : dataNode.get("myRackTiles")) {
+                                com.rummikub.network.dto.TileDto t = new com.rummikub.network.dto.TileDto();
+                                t.id = tNode.getInt("id", 0);
+                                t.number = tNode.getInt("number", 0);
+                                t.color = tNode.getString("color", null);
+                                t.isJoker = tNode.getBoolean("isJoker", false);
+                                result.data.myRackTiles.add(t);
+                            }
+                        }
+
+                        // Table Sets
+                        if (dataNode.has("tableSets") && dataNode.get("tableSets").isArray()) {
+                            result.data.tableSets = new java.util.ArrayList<com.rummikub.network.dto.TableSetDto>();
+                            for (com.badlogic.gdx.utils.JsonValue sNode : dataNode.get("tableSets")) {
+                                com.rummikub.network.dto.TableSetDto ts = new com.rummikub.network.dto.TableSetDto();
+                                ts.set_type = sNode.getString("set_type", null);
+                                
+                                ts.tile_ids = new java.util.ArrayList<Integer>();
+                                if (sNode.has("tile_ids") && sNode.get("tile_ids").isArray()) {
+                                    for (com.badlogic.gdx.utils.JsonValue idNode : sNode.get("tile_ids")) {
+                                        ts.tile_ids.add(idNode.asInt());
+                                    }
+                                }
+                                
+                                ts.tiles = new java.util.ArrayList<com.rummikub.network.dto.TileDto>();
+                                if (sNode.has("tiles") && sNode.get("tiles").isArray()) {
+                                    for (com.badlogic.gdx.utils.JsonValue tNode : sNode.get("tiles")) {
+                                        com.rummikub.network.dto.TileDto t = new com.rummikub.network.dto.TileDto();
+                                        t.id = tNode.getInt("id", 0);
+                                        t.number = tNode.getInt("number", 0);
+                                        t.color = tNode.getString("color", null);
+                                        t.isJoker = tNode.getBoolean("isJoker", false);
+                                        ts.tiles.add(t);
+                                    }
+                                }
+                                result.data.tableSets.add(ts);
+                            }
+                        }
+                    }
+
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onSuccess(result);
+                        }
+                    });
+                } catch (final Exception e) {
+                    final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                    Gdx.app.log("NetworkManager", "Parse error: " + msg, e);
                     Gdx.app.postRunnable(new Runnable() {
                         @Override
                         public void run() {

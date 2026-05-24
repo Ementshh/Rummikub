@@ -56,6 +56,7 @@ public class WaitingRoomScreen extends BaseScreen {
 
     @Override
     protected void buildUI() {
+        Gdx.app.log("WaitingRoom", "SMOKE TEST: WaitingRoomScreen is loading!");
         com.badlogic.gdx.scenes.scene2d.ui.Image bg = new com.badlogic.gdx.scenes.scene2d.ui.Image(com.rummikub.utils.ResourcePool.getInstance().getBgWaitingRoom());
         bg.setFillParent(true);
         stage.addActor(bg);
@@ -131,6 +132,7 @@ public class WaitingRoomScreen extends BaseScreen {
 
     @Override
     protected void update(float delta) {
+        Gdx.app.log("WaitingRoom", "Update loop is running...");
         pollTimer += delta;
         if (pollTimer >= 3f) {
             pollTimer = 0f;
@@ -179,6 +181,9 @@ public class WaitingRoomScreen extends BaseScreen {
             @Override
             public void onFailure(String err) {
                 Gdx.app.log("WaitingRoom", "Poll error: " + err);
+                if (statusLabel != null) {
+                    statusLabel.setText("Error memuat data: " + err);
+                }
             }
         });
     }

@@ -157,6 +157,6 @@ public class GameApiFacade {
      * Poll the current game state. Called periodically during gameplay.
      */
     public void getGameState(String gameId, ApiCallback<GameStateResponse> cb) {
-        net.get("/api/games/" + gameId + "/state", GameStateResponse.class, cb);
+        net.getGameStateManual("/api/games/" + gameId + "/state", cb);
     }
 }

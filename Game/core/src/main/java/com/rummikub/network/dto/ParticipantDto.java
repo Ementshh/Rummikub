@@ -6,6 +6,7 @@ public class ParticipantDto {
     public int turnOrder;
     public boolean hasDoneInitialMeld;
     public boolean hasLeft;
+    public int score;
 
     public ParticipantDto() {}
 
