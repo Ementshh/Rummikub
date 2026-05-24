@@ -1,40 +1,51 @@
 package com.rummikub.utils;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 
-
- //Shared pool of expensive native rendering resources.
-
+// Shared pool of expensive native rendering resources.
 public class ResourcePool {
 
     private static ResourcePool instance;
 
+    public final AssetManager assetManager;
+
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
-    private TextureAtlas tileAtlas;
-    private TextureAtlas uiAtlas;
 
-    private com.badlogic.gdx.graphics.Texture bgLogin;
-    private com.badlogic.gdx.graphics.Texture bgLobby;
-    private com.badlogic.gdx.graphics.Texture bgWaitingRoom;
-    private com.badlogic.gdx.graphics.Texture bgGameOver;
-    private com.badlogic.gdx.graphics.g2d.BitmapFont customFont;
-    private com.badlogic.gdx.graphics.g2d.BitmapFont inputFont;
-
-    private com.badlogic.gdx.audio.Sound clickSound;
-    private com.badlogic.gdx.audio.Sound placeSound;
-
-    private com.badlogic.gdx.audio.Music bgmMenu;
-    private com.badlogic.gdx.audio.Music bgmGame;
-    private com.badlogic.gdx.audio.Sound sfxWin;
-    private com.badlogic.gdx.audio.Sound sfxLose;
-    private com.badlogic.gdx.audio.Music currentBgm;
+    private Music currentBgm;
     private boolean isMuted = false;
 
-    private ResourcePool() {}
+    private ResourcePool() {
+        // Explicitly use InternalFileHandleResolver to support asset remapping in GWT
+        this.assetManager = new AssetManager(new InternalFileHandleResolver());
+        loadAssets();
+        this.assetManager.finishLoading(); // Block until loaded
+    }
+
+    private void loadAssets() {
+        assetManager.load("tiles.atlas", TextureAtlas.class);
+        assetManager.load("ui.atlas", TextureAtlas.class);
+        assetManager.load("bg_loginscreen.jpg", Texture.class);
+        assetManager.load("bg_lobby.jpg", Texture.class);
+        assetManager.load("bg_waitingroom.jpg", Texture.class);
+        assetManager.load("bg_gameover.jpg", Texture.class);
+        assetManager.load("myfont.fnt", BitmapFont.class);
+        assetManager.load("myfont_input.fnt", BitmapFont.class);
+        assetManager.load("sfx_click.ogg", Sound.class);
+        assetManager.load("sfx_place.ogg", Sound.class);
+        assetManager.load("bgm_menu.ogg", Music.class);
+        assetManager.load("bgm_game.ogg", Music.class);
+        assetManager.load("sfx_win.ogg", Sound.class);
+        assetManager.load("sfx_lose.ogg", Sound.class);
+    }
 
     public static ResourcePool getInstance() {
         if (instance == null) {
@@ -43,14 +54,12 @@ public class ResourcePool {
         return instance;
     }
 
-
     public ShapeRenderer getShapeRenderer() {
         if (shapeRenderer == null) {
             shapeRenderer = new ShapeRenderer();
         }
         return shapeRenderer;
     }
-
 
     public BitmapFont getFont() {
         if (font == null) {
@@ -60,111 +69,66 @@ public class ResourcePool {
     }
 
     public TextureAtlas getTileAtlas() {
-        if (tileAtlas == null) {
-            tileAtlas = new TextureAtlas("tiles.atlas");
-        }
-        return tileAtlas;
+        return assetManager.get("tiles.atlas", TextureAtlas.class);
     }
 
     public TextureAtlas getUiAtlas() {
-        if (uiAtlas == null) {
-            uiAtlas = new TextureAtlas(Gdx.files.internal("ui.atlas"));
-        }
-        return uiAtlas;
+        return assetManager.get("ui.atlas", TextureAtlas.class);
     }
 
-    public com.badlogic.gdx.graphics.Texture getBgLogin() {
-        if (bgLogin == null) {
-            bgLogin = new com.badlogic.gdx.graphics.Texture("bg_loginscreen.jpg");
-        }
-        return bgLogin;
+    public Texture getBgLogin() {
+        return assetManager.get("bg_loginscreen.jpg", Texture.class);
     }
 
-    public com.badlogic.gdx.graphics.Texture getBgLobby() {
-        if (bgLobby == null) {
-            bgLobby = new com.badlogic.gdx.graphics.Texture("bg_lobby.jpg");
-        }
-        return bgLobby;
+    public Texture getBgLobby() {
+        return assetManager.get("bg_lobby.jpg", Texture.class);
     }
 
-    public com.badlogic.gdx.graphics.Texture getBgWaitingRoom() {
-        if (bgWaitingRoom == null) {
-            bgWaitingRoom = new com.badlogic.gdx.graphics.Texture("bg_waitingroom.jpg");
-        }
-        return bgWaitingRoom;
+    public Texture getBgWaitingRoom() {
+        return assetManager.get("bg_waitingroom.jpg", Texture.class);
     }
 
-    public com.badlogic.gdx.graphics.Texture getBgGameOver() {
-        if (bgGameOver == null) {
-            bgGameOver = new com.badlogic.gdx.graphics.Texture("bg_gameover.jpg");
-        }
-        return bgGameOver;
+    public Texture getBgGameOver() {
+        return assetManager.get("bg_gameover.jpg", Texture.class);
     }
 
-    public com.badlogic.gdx.graphics.g2d.BitmapFont getCustomFont() {
-        if (customFont == null) {
-            customFont = new com.badlogic.gdx.graphics.g2d.BitmapFont(com.badlogic.gdx.Gdx.files.internal("myfont.fnt"));
-        }
-        return customFont;
+    public BitmapFont getCustomFont() {
+        return assetManager.get("myfont.fnt", BitmapFont.class);
     }
 
-    public com.badlogic.gdx.graphics.g2d.BitmapFont getInputFont() {
-        if (inputFont == null) {
-            if (!com.badlogic.gdx.Gdx.files.internal("myfont_input_0.png").exists()) {
-                com.badlogic.gdx.Gdx.app.error("ResourcePool", "myfont_input_0.png not found!");
-            } else {
-                com.badlogic.gdx.Gdx.app.log("ResourcePool", "myfont_input_0.png found successfully.");
-            }
-            inputFont = new com.badlogic.gdx.graphics.g2d.BitmapFont(com.badlogic.gdx.Gdx.files.internal("myfont_input.fnt"));
-        }
-        return inputFont;
+    public BitmapFont getInputFont() {
+        return assetManager.get("myfont_input.fnt", BitmapFont.class);
     }
 
-    public com.badlogic.gdx.audio.Sound getClickSound() {
-        if (clickSound == null) {
-            clickSound = Gdx.audio.newSound(Gdx.files.internal("sfx_click.ogg"));
-        }
-        return clickSound;
+    public Sound getClickSound() {
+        return assetManager.get("sfx_click.ogg", Sound.class);
     }
 
-    public com.badlogic.gdx.audio.Sound getPlaceSound() {
-        if (placeSound == null) {
-            placeSound = Gdx.audio.newSound(Gdx.files.internal("sfx_place.ogg"));
-        }
-        return placeSound;
+    public Sound getPlaceSound() {
+        return assetManager.get("sfx_place.ogg", Sound.class);
     }
 
-    public com.badlogic.gdx.audio.Music getBgmMenu() {
-        if (bgmMenu == null) {
-            bgmMenu = Gdx.audio.newMusic(Gdx.files.internal("bgm_menu.ogg"));
-            bgmMenu.setLooping(true);
-        }
-        return bgmMenu;
+    public Music getBgmMenu() {
+        Music m = assetManager.get("bgm_menu.ogg", Music.class);
+        m.setLooping(true);
+        return m;
     }
 
-    public com.badlogic.gdx.audio.Music getBgmGame() {
-        if (bgmGame == null) {
-            bgmGame = Gdx.audio.newMusic(Gdx.files.internal("bgm_game.ogg"));
-            bgmGame.setLooping(true);
-        }
-        return bgmGame;
+    public Music getBgmGame() {
+        Music m = assetManager.get("bgm_game.ogg", Music.class);
+        m.setLooping(true);
+        return m;
     }
 
-    public com.badlogic.gdx.audio.Sound getSfxWin() {
-        if (sfxWin == null) {
-            sfxWin = Gdx.audio.newSound(Gdx.files.internal("sfx_win.ogg"));
-        }
-        return sfxWin;
+    public Sound getSfxWin() {
+        return assetManager.get("sfx_win.ogg", Sound.class);
     }
 
-    public com.badlogic.gdx.audio.Sound getSfxLose() {
-        if (sfxLose == null) {
-            sfxLose = Gdx.audio.newSound(Gdx.files.internal("sfx_lose.ogg"));
-        }
-        return sfxLose;
+    public Sound getSfxLose() {
+        return assetManager.get("sfx_lose.ogg", Sound.class);
     }
 
-    public void playBgm(com.badlogic.gdx.audio.Music newBgm) {
+    public void playBgm(Music newBgm) {
         if (currentBgm == newBgm) {
             return;
         }
@@ -192,7 +156,6 @@ public class ResourcePool {
         }
     }
 
-
     public void dispose() {
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
@@ -202,62 +165,7 @@ public class ResourcePool {
             font.dispose();
             font = null;
         }
-        if (tileAtlas != null) {
-            tileAtlas.dispose();
-            tileAtlas = null;
-        }
-        if (uiAtlas != null) {
-            uiAtlas.dispose();
-            uiAtlas = null;
-        }
-        if (bgLogin != null) {
-            bgLogin.dispose();
-            bgLogin = null;
-        }
-        if (bgLobby != null) {
-            bgLobby.dispose();
-            bgLobby = null;
-        }
-        if (bgWaitingRoom != null) {
-            bgWaitingRoom.dispose();
-            bgWaitingRoom = null;
-        }
-        if (bgGameOver != null) {
-            bgGameOver.dispose();
-            bgGameOver = null;
-        }
-        if (customFont != null) {
-            customFont.dispose();
-            customFont = null;
-        }
-        if (inputFont != null) {
-            inputFont.dispose();
-            inputFont = null;
-        }
-        if (clickSound != null) {
-            clickSound.dispose();
-            clickSound = null;
-        }
-        if (placeSound != null) {
-            placeSound.dispose();
-            placeSound = null;
-        }
-        if (bgmMenu != null) {
-            bgmMenu.dispose();
-            bgmMenu = null;
-        }
-        if (bgmGame != null) {
-            bgmGame.dispose();
-            bgmGame = null;
-        }
-        if (sfxWin != null) {
-            sfxWin.dispose();
-            sfxWin = null;
-        }
-        if (sfxLose != null) {
-            sfxLose.dispose();
-            sfxLose = null;
-        }
+        assetManager.dispose();
         currentBgm = null;
     }
 }
