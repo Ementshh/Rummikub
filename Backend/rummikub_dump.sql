@@ -59,27 +59,27 @@ CREATE TABLE tiles (
 -- TABEL 3: games
 -- ============================================================
 CREATE TABLE games (
-    id                          UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-    status                      game_status NOT NULL DEFAULT 'WAITING',
-    current_turn_participant_id UUID,       -- FK ditambahkan setelah game_participants dibuat
-    turn_started_at             TIMESTAMP,
-    created_at                  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id            VARCHAR(6) PRIMARY KEY,
+    status        VARCHAR(20) NOT NULL DEFAULT 'WAITING',
+    current_turn_participant_id UUID,
+    turn_started_at TIMESTAMP,
+    winner_participant_id UUID,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================
 -- TABEL 4: game_participants (Relasi Many-to-Many: users <-> games)
 -- ============================================================
 CREATE TABLE game_participants (
-    id                   UUID     PRIMARY KEY DEFAULT uuid_generate_v4(),
-    game_id              UUID     NOT NULL REFERENCES games (id) ON DELETE CASCADE,
-    user_id              UUID     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    turn_order           SMALLINT NOT NULL,
-    score                INT      NOT NULL DEFAULT 0,
-    has_done_initial_meld BOOLEAN NOT NULL DEFAULT FALSE,
-
-    CONSTRAINT chk_turn_order CHECK (turn_order BETWEEN 1 AND 4),
-    CONSTRAINT uq_game_user   UNIQUE (game_id, user_id),
-    CONSTRAINT uq_game_turn   UNIQUE (game_id, turn_order)
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    game_id       VARCHAR(6) NOT NULL,
+    user_id       UUID NOT NULL,
+    turn_order    SMALLINT,
+    score         INT DEFAULT 0,
+    has_left      BOOLEAN DEFAULT FALSE,
+    has_done_initial_meld BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_game_participants_game FOREIGN KEY (game_id) REFERENCES games(id),
+    CONSTRAINT fk_game_participants_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Tambahkan FK dari games.current_turn_participant_id -> game_participants.id
@@ -94,33 +94,26 @@ ALTER TABLE games
 -- TABEL 5: table_sets (Grup/Run valid di meja)
 -- ============================================================
 CREATE TABLE table_sets (
-    id       UUID     PRIMARY KEY DEFAULT uuid_generate_v4(),
-    game_id  UUID     NOT NULL REFERENCES games (id) ON DELETE CASCADE,
-    set_type set_type NOT NULL
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    game_id       VARCHAR(6) NOT NULL,
+    set_type      set_type,
+    CONSTRAINT fk_table_sets_game FOREIGN KEY (game_id) REFERENCES games(id)
 );
 
 -- ============================================================
 -- TABEL 6: game_tiles (Posisi 106 ubin dalam sebuah game)
 -- ============================================================
 CREATE TABLE game_tiles (
-    id             UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
-    game_id        UUID          NOT NULL REFERENCES games (id) ON DELETE CASCADE,
-    tile_id        INT           NOT NULL REFERENCES tiles (id),
-    location       tile_location NOT NULL DEFAULT 'POOL',
-    participant_id UUID          REFERENCES game_participants (id) ON DELETE SET NULL,
-    table_set_id   UUID          REFERENCES table_sets (id) ON DELETE SET NULL,
-
-    CONSTRAINT uq_game_tile UNIQUE (game_id, tile_id),
-
-    CONSTRAINT chk_tile_location_rack CHECK (
-        location <> 'RACK' OR participant_id IS NOT NULL
-    ),
-    CONSTRAINT chk_tile_location_table CHECK (
-        location <> 'TABLE' OR table_set_id IS NOT NULL
-    ),
-    CONSTRAINT chk_tile_location_pool CHECK (
-        location <> 'POOL' OR (participant_id IS NULL AND table_set_id IS NULL)
-    )
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    game_id       VARCHAR(6) NOT NULL,
+    tile_id       INT NOT NULL,
+    participant_id UUID,
+    table_set_id  UUID,
+    location      tile_location,
+    CONSTRAINT fk_game_tiles_game FOREIGN KEY (game_id) REFERENCES games(id),
+    CONSTRAINT fk_game_tiles_tile FOREIGN KEY (tile_id) REFERENCES tiles(id),
+    CONSTRAINT fk_game_tiles_participant FOREIGN KEY (participant_id) REFERENCES game_participants(id),
+    CONSTRAINT fk_game_tiles_set FOREIGN KEY (table_set_id) REFERENCES table_sets(id)
 );
 
 -- ============================================================
