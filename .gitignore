@@ -51,3 +51,7 @@ Game/.gradle/w
 *.class
 *.log
 !gradle/wrapper/gradle-wrapper.jar
+
+# Pengecualian file presentasi dan dokumentasi
+!README.md
+!Files/PowerPoint/ClementheoBenayaRaya_24063810_Rummikub\ Online.pdf
