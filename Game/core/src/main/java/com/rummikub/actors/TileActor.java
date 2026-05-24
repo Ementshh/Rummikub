@@ -49,10 +49,16 @@ public class TileActor extends Actor {
         this.tileData  = tileData;
         this.strategy  = strategy;
 
-        String colorLower = tileData.color.toLowerCase();
         if (tileData.isJoker) {
-            tileRegion = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + colorLower);
+            String color = "black";
+            if (tileData.color != null && !tileData.color.equalsIgnoreCase("NONE")) {
+                color = tileData.color.toLowerCase();
+            } else if (tileData.id % 2 == 0) {
+                color = "red";
+            }
+            tileRegion = ResourcePool.getInstance().getTileAtlas().findRegion("joker_" + color);
         } else {
+            String colorLower = tileData.color.toLowerCase();
             tileRegion = ResourcePool.getInstance().getTileAtlas().findRegion(colorLower + "_" + tileData.number);
         }
 
