@@ -459,6 +459,12 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
 
                 gsm.loadFromServer(r.data, setValidator);
 
+                // DIAGNOSTIC: track rack tiles after server sync
+                Gdx.app.log("DEBUG_RACK", "After loadFromServer: myRackTiles.size()="
+                    + gsm.getMyRackTiles().size()
+                    + " tableSets.size()=" + gsm.getTableSets().size()
+                    + " status=" + r.data.status);
+
                 // BUG 2 DEBUG
                 Gdx.app.log("DEBUG_TURN", "currentTurnUserId dari server: " + r.data.currentTurnUserId);
                 Gdx.app.log("DEBUG_TURN", "userId kita (NetworkManager): " + NetworkManager.getInstance().getUserId());
@@ -579,9 +585,29 @@ public class GameScreen extends BaseScreen implements TileDragHandler.Callback {
         // Kirim ke server
         transitionTo(new SubmittingState());
         EndTurnRequest req = gsm.buildEndTurnRequest();
-        Gdx.app.log("GameScreen", "Sending end-turn: "
-                + sets.size() + " sets, "
-                + gsm.getMyRackTiles().size() + " rack tiles");
+
+        // DIAGNOSTIC: Log actual tile counts to help debug auto-win bug
+        int rackCount = req.rack_tiles != null ? req.rack_tiles.size() : -1;
+        int tableTileCount = 0;
+        int setCount = req.table_sets != null ? req.table_sets.size() : -1;
+        if (req.table_sets != null) {
+            for (TableSetDto s : req.table_sets) {
+                tableTileCount += s.tile_ids.size();
+            }
+        }
+        Gdx.app.log("GameScreen", "END-TURN DIAG: rack_tiles=" + rackCount
+                + " table_tile_total=" + tableTileCount
+                + " sets=" + setCount
+                + " myRackTiles.size()=" + gsm.getMyRackTiles().size());
+
+        // Safety check: if rack is empty on the very first turn, something is wrong
+        if (rackCount == 0 && tableTileCount < 14) {
+            hudManager.showStatusMessage("BUG: rack kosong tapi total tile < 14. Coba reset/refresh.");
+            gsm.resetToSnapshot();
+            refreshTileDisplay();
+            transitionTo(new MyTurnState());
+            return;
+        }
 
         facade.endTurn(gameId, req, new ApiCallback<EndTurnResponse>() {
             @Override

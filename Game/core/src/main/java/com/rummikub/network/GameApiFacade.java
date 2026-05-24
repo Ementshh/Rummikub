@@ -99,7 +99,7 @@ public class GameApiFacade {
         // which Spring/Jackson rejects with 400). Backend expects snake_case field names.
         String json = endTurnToJson(req);
         com.badlogic.gdx.Gdx.app.log("GameApiFacade", "END-TURN JSON payload: " + json);
-        net.postRaw("/api/games/" + gameId + "/end-turn", json, EndTurnResponse.class, cb);
+        net.postEndTurnManual("/api/games/" + gameId + "/end-turn", json, cb);
     }
 
     /** Manually serializes EndTurnRequest to a spec-compliant JSON string. */

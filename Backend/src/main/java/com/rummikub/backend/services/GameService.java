@@ -47,7 +47,7 @@ public class GameService {
 
     @Scheduled(fixedRate = 5000)
     public void sweepDisconnectedPlayers() {
-        Instant cutoff = Instant.now().minusSeconds(15);
+        Instant cutoff = Instant.now().minusSeconds(120);
         for (Map.Entry<String, PingData> entry : activeHeartbeats.entrySet()) {
             if (entry.getValue().lastSeen().isBefore(cutoff)) {
                 String timedOutUserId = entry.getKey();

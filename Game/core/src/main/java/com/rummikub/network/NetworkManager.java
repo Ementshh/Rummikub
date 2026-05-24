@@ -422,4 +422,92 @@ public class NetworkManager {
             }
         });
     }
+
+    /**
+     * Performs an HTTP POST and manually parses the EndTurnResponse tree
+     * to bypass LibGDX Json inner class deserialization issues under GWT.
+     */
+    public void postEndTurnManual(String endpoint, String bodyJson, final ApiCallback<com.rummikub.network.dto.EndTurnResponse> cb) {
+        Net.HttpRequest request = new Net.HttpRequest(Net.HttpMethods.POST);
+        request.setUrl(Constants.BASE_URL + endpoint);
+        request.setHeader("Content-Type", "application/json");
+        request.setHeader("Accept", "application/json");
+        if (jwtToken != null) {
+            request.setHeader("Authorization", "Bearer " + jwtToken);
+        }
+        if (bodyJson != null) {
+            request.setContent(bodyJson);
+        }
+        request.setTimeOut(15000);
+
+        Gdx.net.sendHttpRequest(request, new Net.HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(Net.HttpResponse httpResponse) {
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                String resp = httpResponse.getResultAsString();
+
+                if (resp == null || resp.trim().isEmpty() || resp.equals("{}")) {
+                    resp = (statusCode >= 200 && statusCode < 300)
+                        ? "{\"success\":true}"
+                        : "{\"success\":false}";
+                }
+
+                Gdx.app.log("NetworkManager", "POST END-TURN " + endpoint + " -> HTTP " + statusCode + " | body: " + resp);
+
+                try {
+                    com.badlogic.gdx.utils.JsonReader reader = new com.badlogic.gdx.utils.JsonReader();
+                    com.badlogic.gdx.utils.JsonValue root = reader.parse(resp);
+
+                    final com.rummikub.network.dto.EndTurnResponse result = new com.rummikub.network.dto.EndTurnResponse();
+                    result.success = root.getBoolean("success", false);
+                    result.error = root.getString("error", null);
+
+                    if (root.has("data") && !root.get("data").isNull()) {
+                        com.badlogic.gdx.utils.JsonValue dataNode = root.get("data");
+                        result.data = new com.rummikub.network.dto.EndTurnResponse.EndTurnData();
+                        result.data.gameOver = dataNode.getBoolean("gameOver", false);
+                        result.data.winner = dataNode.getString("winner", null);
+                        result.data.nextTurnUserId = dataNode.getString("nextTurnId", null); // backend returns nextTurnId
+                    }
+
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onSuccess(result);
+                        }
+                    });
+                } catch (final Exception e) {
+                    final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+                    Gdx.app.log("NetworkManager", "Parse EndTurn error: " + msg, e);
+                    Gdx.app.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onFailure(msg);
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                final String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getName();
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure(msg);
+                    }
+                });
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        cb.onFailure("Request cancelled");
+                    }
+                });
+            }
+        });
+    }
 }
