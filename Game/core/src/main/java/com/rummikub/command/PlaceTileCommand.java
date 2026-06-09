@@ -104,6 +104,8 @@ public class PlaceTileCommand implements TileCommand {
         }
     }
 
+    // commit trigger redeploy
+
     @Override
     public void undo() {
         if (savedTile == null) return;
