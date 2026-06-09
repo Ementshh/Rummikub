@@ -1,0 +1,3 @@
+- Bisa dimainkan di web (ada di readme)
+- Realtime Online Multiplayer
+- Asset yang pake AI cuman musik sama background, tiles sama button semuanya buat sendiri di figma.
